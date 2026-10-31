@@ -24,7 +24,7 @@ export function StatusBar() {
   const coord = (v: number) => convert(v, state.modelUnit, state.settings.units).toFixed(2);
   return (
     <footer class="statusbar">
-      <span class="status-msg" aria-live="polite">
+      <span class="status-msg" classList={{ busy: state.loading || c.busy() }} aria-live="polite">
         {state.loading ? "Loading…" : state.status || "Ready"}
       </span>
       <span class="spacer" />

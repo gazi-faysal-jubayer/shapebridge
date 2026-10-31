@@ -51,6 +51,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Changed
 
+- New look: a dark engineering theme by default (light still available), the Inter typeface, a blue accent, consistent focus rings, hover and disabled states, a busy spinner, reduced-motion support and larger touch targets.
+- New logo: two solids joined by a span. All app icons are regenerated from it.
 - The 3D engine loads after the interface appears: initial JavaScript fell from 264 KB to ~65 KB gzipped.
 - Large models (> 300k triangles) use BVH-accelerated picking.
 - Samples moved to `public/samples/` so the app can open them.

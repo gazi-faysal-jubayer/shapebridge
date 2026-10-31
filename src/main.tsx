@@ -1,5 +1,6 @@
 import { render } from "solid-js/web";
 import App from "./App";
+import "@fontsource-variable/inter";
 import "./styles.css";
 
 // where the 3D engine loads its heavy readers from (see `localReaders` in vite.config.ts); absolute,

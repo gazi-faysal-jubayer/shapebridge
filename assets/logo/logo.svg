@@ -1,9 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ShapeBridge">
-  <!-- isometric solid whose front face is cut by a bridge arch -->
-  <path d="M32 4 58 19 32 34 6 19Z" fill="#5eead4"/>
-  <path d="M6 19 32 34V60L6 45Z" fill="#0d9488"/>
-  <path d="M58 19 32 34V60L58 45Z" fill="#0f766e"/>
-  <path d="M10 46V33a10 10 0 0 1 18 6V56Z" fill="#0f172a" opacity=".9"/>
-  <path d="M36 56V39a10 10 0 0 1 18-6V46Z" fill="#0f172a" opacity=".9"/>
-  <path d="M32 4 58 19 32 34 6 19Z M32 34V60" fill="none" stroke="#f0fdfa" stroke-width="1.5" stroke-linejoin="round"/>
-</svg>
+  <!-- two solids joined by a span: shape + bridge. Drawn for this project. -->
+  <defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14254a"/><stop offset="1" stop-color="#060b16"/></linearGradient>
+<radialGradient id="glow" cx=".5" cy=".28" r=".6"><stop offset="0" stop-color="#3b82f6" stop-opacity=".55"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></radialGradient>
+<linearGradient id="top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0f9ff"/><stop offset="1" stop-color="#7dd3fc"/></linearGradient>
+<linearGradient id="left" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient>
+<linearGradient id="right" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#172554"/></linearGradient>
+<linearGradient id="topw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff7ed"/><stop offset="1" stop-color="#fdba74"/></linearGradient>
+<linearGradient id="leftw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fb923c"/><stop offset="1" stop-color="#c2410c"/></linearGradient>
+<linearGradient id="rightw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ea580c"/><stop offset="1" stop-color="#7c2d12"/></linearGradient>
+<linearGradient id="tunnel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#020617"/><stop offset="1" stop-color="#0f172a"/></linearGradient>
+
+
+<filter id="drop" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="2.2" stdDeviation="2" flood-color="#000" flood-opacity=".55"/></filter>
+<clipPath id="tile"><rect x="2" y="2" width="60" height="60" rx="14"/></clipPath>
+</defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)"/><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#glow)"/><g clip-path="url(#tile)"><g transform="translate(32 33) scale(0.66) translate(-32 -36)"><ellipse cx="32" cy="55" rx="22" ry="6.2" fill="#000" opacity=".45"/><g filter="url(#drop)"><path d="M40.05 37.55 L56.16 46.85 L56.16 12.75 L40.05 3.45 Z" fill="url(#leftw)"/><path d="M72.27 37.55 L56.16 46.85 L56.16 12.75 L72.27 3.45 Z" fill="url(#rightw)"/><path d="M56.16 -5.85 L72.27 3.45 L56.16 12.75 L40.05 3.45 Z" fill="url(#topw)"/><path d="M16.43 33.83 L26.09 39.41 L26.09 31.97 L16.43 26.39 Z" fill="url(#left)"/><path d="M52.94 23.91 L26.09 39.41 L26.09 31.97 L52.94 16.47 Z" fill="url(#right)"/><path d="M43.28 10.89 L52.94 16.47 L26.09 31.97 L16.43 26.39 Z" fill="url(#top)"/><path d="M-2.90 68.55 L13.21 77.85 L13.21 43.13 L-2.90 33.83 Z" fill="url(#left)"/><path d="M29.32 68.55 L13.21 77.85 L13.21 43.13 L29.32 33.83 Z" fill="url(#right)"/><path d="M13.21 24.53 L29.32 33.83 L13.21 43.13 L-2.90 33.83 Z" fill="url(#top)"/></g></g></g><rect x="2.5" y="2.5" width="59" height="59" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".12"/></svg>
