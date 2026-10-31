@@ -9,7 +9,11 @@ import { header, isTool, normalOf, prepare, scaled } from "./common";
 // shortcut: fillet/chamfer radii and their edge picks are evaluated when the macro runs (FreeCAD can't bind them); re-run the macro after big changes.
 export function freecad(doc: Doc): string {
   const { params, features, num } = prepare(doc);
-  const fc = (e: string) => JSON.stringify(printExpr(e, "freecad"));
+  const alias = aliases(params.map((p) => p.name));
+  const rename = (e: string, re: RegExp) => e.replace(re, (_m, pre: string, n: string) => pre + (alias.get(n) ?? n));
+  // Params.<name> in object expressions, bare names inside the sheet
+  const fc = (e: string) => JSON.stringify(rename(printExpr(e, "freecad"), /(Params\.)(\w+)/g));
+  const sheetExpr = (e: string) => rename(printExpr(e, "plain"), /(^|[^\w.])([A-Za-z_]\w*)/g);
   const out: string[] = [
     header(doc, "#"),
     "import FreeCAD as App",
@@ -47,11 +51,11 @@ export function freecad(doc: Doc): string {
   params.forEach((p, i) => {
     const row = i + 1;
     // plain names resolve to aliases inside the same sheet
-    const value = p.literal ? printExpr(p.expr, "plain") : `=${printExpr(p.expr, "plain")}`;
+    const value = p.literal ? printExpr(p.expr, "plain") : `=${sheetExpr(p.expr)}`;
     out.push(
       `sheet.set("A${row}", ${JSON.stringify(p.name)})`,
       `sheet.set("B${row}", ${JSON.stringify(value)})`,
-      `sheet.setAlias("B${row}", ${JSON.stringify(p.name)})`,
+      `sheet.setAlias("B${row}", ${JSON.stringify(alias.get(p.name) ?? p.name)})`,
     );
     if (p.note) out.push(`sheet.set("C${row}", ${JSON.stringify(p.note)})`);
   });
@@ -246,3 +250,11 @@ export function freecad(doc: Doc): string {
 }
 
 const tup = (v: number[]) => `(${v.join(", ")})`;
+
+// FreeCAD rejects aliases that read as unit symbols (h = hour, m, s, deg…) or cell addresses (A1)
+const UNITS = new Set("m mm cm dm km um nm in ft yd mi thou mil h s ms min g kg mg t lb oz A K J W V C F T N Pa kPa MPa GPa psi deg rad gon M e pi".split(" "));
+export function aliases(names: string[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const n of names) if (UNITS.has(n) || /^[A-Za-z]{1,2}\d+$/.test(n)) map.set(n, `p_${n}`);
+  return map;
+}

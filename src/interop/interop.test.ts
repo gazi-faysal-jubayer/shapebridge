@@ -23,6 +23,15 @@ describe("parametric exporters", () => {
     for (const t of targets) expect(() => t.generate(evilPlane)).toThrow();
   });
 
+  it("renames FreeCAD aliases that clash with units or cells", async () => {
+    const { aliases } = await import("./freecad");
+    expect([...aliases(["h", "r", "width", "A1", "deg"])]).toEqual([["h", "p_h"], ["A1", "p_A1"], ["deg", "p_deg"]]);
+    const knob = templates.find((t) => t.name === "knob")!;
+    const macro = targets.find((t) => t.id === "freecad")!.generate(knob);
+    expect(macro).toContain('sheet.setAlias("B2", "p_h")');
+    expect(macro).not.toMatch(/Params\.h/);
+  });
+
   it("prints degree trig per dialect", async () => {
     const { printExpr } = await import("../model/params");
     expect(printExpr("r * cos(a)", "python")).toBe("r * math.cos(math.radians(a))");

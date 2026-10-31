@@ -37,7 +37,7 @@ sheet.set("B1", "15")
 sheet.setAlias("B1", "r")
 sheet.set("A2", "h")
 sheet.set("B2", "18")
-sheet.setAlias("B2", "h")
+sheet.setAlias("B2", "p_h")
 sheet.set("A3", "grip")
 sheet.set("B3", "2")
 sheet.setAlias("B3", "grip")
@@ -69,30 +69,30 @@ body_sketch.setExpression("Constraints[%d]" % c, "0")  # line 1 start
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 1, 2, 15))
 body_sketch.setExpression("Constraints[%d]" % c, "Params.r")
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 1, 2, 12.6))
-body_sketch.setExpression("Constraints[%d]" % c, "Params.h * 0.7")  # line 1 end
+body_sketch.setExpression("Constraints[%d]" % c, "Params.p_h * 0.7")  # line 1 end
 body_sketch.addGeometry(Part.LineSegment(App.Vector(15, 12.6, 0), App.Vector(9, 18, 0)))
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 2, 1, 15))
 body_sketch.setExpression("Constraints[%d]" % c, "Params.r")
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 2, 1, 12.6))
-body_sketch.setExpression("Constraints[%d]" % c, "Params.h * 0.7")  # line 2 start
+body_sketch.setExpression("Constraints[%d]" % c, "Params.p_h * 0.7")  # line 2 start
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 2, 2, 9))
 body_sketch.setExpression("Constraints[%d]" % c, "Params.r * 0.6")
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 2, 2, 18))
-body_sketch.setExpression("Constraints[%d]" % c, "Params.h")  # line 2 end
+body_sketch.setExpression("Constraints[%d]" % c, "Params.p_h")  # line 2 end
 body_sketch.addGeometry(Part.LineSegment(App.Vector(9, 18, 0), App.Vector(0, 18, 0)))
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 3, 1, 9))
 body_sketch.setExpression("Constraints[%d]" % c, "Params.r * 0.6")
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 3, 1, 18))
-body_sketch.setExpression("Constraints[%d]" % c, "Params.h")  # line 3 start
+body_sketch.setExpression("Constraints[%d]" % c, "Params.p_h")  # line 3 start
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 3, 2, 0))
 body_sketch.setExpression("Constraints[%d]" % c, "0")
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 3, 2, 18))
-body_sketch.setExpression("Constraints[%d]" % c, "Params.h")  # line 3 end
+body_sketch.setExpression("Constraints[%d]" % c, "Params.p_h")  # line 3 end
 body_sketch.addGeometry(Part.LineSegment(App.Vector(0, 18, 0), App.Vector(0, 0, 0)))
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 4, 1, 0))
 body_sketch.setExpression("Constraints[%d]" % c, "0")
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 4, 1, 18))
-body_sketch.setExpression("Constraints[%d]" % c, "Params.h")  # line 4 start
+body_sketch.setExpression("Constraints[%d]" % c, "Params.p_h")  # line 4 start
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 4, 2, 0))
 body_sketch.setExpression("Constraints[%d]" % c, "0")
 c = body_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 4, 2, 0))
@@ -125,7 +125,7 @@ flute.DirMode = "Normal"
 flute.Solid = True
 flute.Symmetric = False
 flute.Reversed = False
-flute.setExpression("LengthFwd", "Params.h * 0.7")
+flute.setExpression("LengthFwd", "Params.p_h * 0.7")
 cut_flute = doc.addObject("Part::Cut", "cut_flute")
 cut_flute.Base = body
 cut_flute.Tool = flute
@@ -143,10 +143,10 @@ cut_flutes.Tool = flutes
 shaft_0 = doc.addObject("Part::Cylinder", "shaft_0")
 shaft_0.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(0, 0, 1), App.Vector(0, 0, 1)))
 shaft_0.setExpression("Radius", "Params.shaft_d / 2")
-shaft_0.setExpression("Height", "Params.h * 0.6 + 0.0001")
+shaft_0.setExpression("Height", "Params.p_h * 0.6 + 0.0001")
 shaft_0.setExpression("Placement.Base.x", "0")
 shaft_0.setExpression("Placement.Base.y", "0")
-shaft_0.setExpression("Placement.Base.z", "Params.h * 0.6 - Params.h * 0.6")
+shaft_0.setExpression("Placement.Base.z", "Params.p_h * 0.6 - Params.p_h * 0.6")
 shaft = shaft_0
 cut_shaft = doc.addObject("Part::Cut", "cut_shaft")
 cut_shaft.Base = cut_flutes
