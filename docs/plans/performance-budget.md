@@ -3,7 +3,8 @@
 | Metric | Budget | v0.1 measured | How to measure |
 |---|---|---|---|
 | Installer size (Windows .msi) | < 20 MB | see release artifact | release workflow artifact size |
-| Initial JS (gzip) | < 300 KB | 264 KB | `npm run build` output |
+| Initial JS (gzip) | < 300 KB (target < 60 KB) | 65 KB (v0.2; was 264 KB) | `npm run build` output |
+| 3D engine chunk (lazy, after first paint) | < 300 KB gz | 260 KB | build output `engine-*.js` |
 | P2P chunk (lazy) | < 40 KB gz | 27 KB | build output `share-*.js` |
 | OCCT kernel (lazy, designer only) | < 8 MB gz | 7.3 MB | build output `replicad_single-*.wasm` |
 | Cold start to empty viewport | < 1 s | not yet measured | Tauri `--verbose` timestamps |

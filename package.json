@@ -16,14 +16,18 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@kobalte/core": "^0.13.14",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-dialog": "^2.8.4",
     "@tauri-apps/plugin-fs": "^2.7.1",
+    "cmdk-solid": "^1.2.0",
+    "lucide-solid": "^1.65.0",
     "online-3d-viewer": "0.18.0",
     "replicad": "1.2.0",
     "replicad-opencascadejs": "1.1.0",
     "solid-js": "^1.9.18",
     "three": "0.176.0",
+    "three-mesh-bvh": "^0.9.17",
     "trystero": "^0.26.0"
   },
   "devDependencies": {

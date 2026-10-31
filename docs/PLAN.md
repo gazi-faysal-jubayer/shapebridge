@@ -63,15 +63,16 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 - [x] Thin vertical slice: open → view → export mesh; parametric sample → STEP and 5 interop targets; live P2P share
 
 ### M1 Viewer (v0.2)
-- Model tree panel (assemblies, names, colours, visibility toggles) · M
-- Measure: point-to-point distance, edge length, bounding box · M
-- Section plane with cap · M
-- View cube / standard views, ortho/perspective toggle, Z-up/Y-up toggle · S
-- Wireframe / shaded / shaded+edges modes · S
-- **Offline readers:** vendor occt-import-js, rhino3dm, web-ifc into the desktop bundle with a CDN fallback · M
-- OS file associations + "Open with" + open from CLI args (Rust side) · M
-- Recent files, drag-drop of folders (OBJ+MTL+textures) · S
-- Large-model performance: worker-side import, progressive display, 5M-triangle target · L
+- [x] Model tree panel (assemblies, names, colours, visibility toggles) · M
+- [x] Measure: point-to-point distance, angle and parallel-face distance, bounding box · M
+- [x] Section plane (stencil cap is a follow-up) · M
+- [x] View cube / standard views, ortho/perspective toggle, Z-up/Y-up toggle · S
+- [x] Wireframe / shaded / shaded+edges / x-ray modes · S
+- [x] Exploded view, saved views, screenshots, command palette, shortcuts, themes · M
+- [ ] **Offline readers:** vendor occt-import-js, rhino3dm, web-ifc into the desktop bundle with a CDN fallback · M (converter PR)
+- [ ] OS file associations + "Open with" + open from CLI args (Rust side) · M
+- [x] Multi-file open (OBJ+MTL+textures) · S — [ ] recent files (desktop)
+- [~] Large-model performance: BVH picking and lazy engine done; worker-side import, 5M-triangle target open · L
 
 ### M1b Formats (v0.3)
 - assimpjs catch-all reader (FBX, Blender, LWO, X, AC3D, MD5 …) · M

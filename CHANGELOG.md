@@ -4,6 +4,21 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+
+- Pro viewer layout: menu bar, model tree with hide/isolate, properties panel (size, area, volume, file properties, units), view cube, floating tool strip, status bar with cursor coordinates, welcome screen with samples.
+- Measure (distance, angle between faces, parallel-face distance), section plane (X/Y/Z, offset, flip), exploded view, display modes (shaded, edges, wireframe, x-ray), perspective/orthographic, Y/Z up axis, standard views, saved views, PNG screenshots.
+- Command palette (Ctrl+K) and keyboard shortcuts generated from one action registry.
+- Light/dark/system theme.
+- Sample assembly (`public/samples/assembly.step`, 7 named parts).
+- Content-Security-Policy for web and desktop.
+
+### Changed
+
+- The 3D engine loads after the interface appears: initial JavaScript fell from 264 KB to ~65 KB gzipped.
+- Large models (> 300k triangles) use BVH-accelerated picking.
+- Samples moved to `public/samples/` so the app can open them.
+
 ## [0.1.0] - 2026-10-31
 
 ### Added
