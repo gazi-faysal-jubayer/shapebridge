@@ -8,10 +8,8 @@ import { templates, migrate, resolve, type Doc } from "./model/doc";
 import type { Measures } from "./kernel/build";
 import { targets } from "./interop";
 import { build } from "./kernel/protocol";
-import type { HostSession } from "./share/share";
 
 let engine: Engine | undefined;
-const p2p = () => import("./share/share");
 
 // ---------- engine lifecycle ----------
 
@@ -23,7 +21,8 @@ export async function mountViewer(el: HTMLElement) {
       const sel = state.selection;
       setState("selection", additive ? (sel.includes(key) ? sel.filter((k) => k !== key) : [...sel, key]) : [key]);
     },
-    onHover: (p) => setState("hover", p),
+    onHover: (p, scene) => setState({ hover: p, hoverScene: scene }),
+    onPlace: (p) => placeHandler(p),
     onMeasure: (m, n) => setState({ measurement: m, measurePoints: n }),
     onCamera: () => cameraListeners.forEach((f) => f()),
   });
@@ -43,6 +42,15 @@ export async function mountViewer(el: HTMLElement) {
   );
   setState("engineReady", true);
 }
+
+const filesListeners = new Set<(files: File[]) => void>();
+/** Called whenever a new model is shown (live review re-sends it to viewers). */
+export const onFiles = (f: (files: File[]) => void) => (filesListeners.add(f), () => filesListeners.delete(f));
+
+let placeHandler: (p: [number, number, number]) => void = () => {};
+/** Live review registers what a comment-tool click does (keeps this module free of share code). */
+export const onPlace = (f: typeof placeHandler) => (placeHandler = f);
+export const getEngine = () => engine;
 
 const cameraListeners = new Set<() => void>();
 export const onCamera = (f: () => void) => (cameraListeners.add(f), () => cameraListeners.delete(f));
@@ -65,7 +73,7 @@ export async function openFiles(list: File[]) {
   return show(list);
 }
 
-async function show(list: File[], preserveCamera = false) {
+export async function show(list: File[], preserveCamera = false) {
   if (!engine) return;
   const camera = preserveCamera && state.files.length ? engine.getCamera() : null;
   setState({ loading: true, status: `Opening ${list.map((f) => f.name).join(", ")}…` });
@@ -88,7 +96,7 @@ async function show(list: File[], preserveCamera = false) {
       views: loadViews(list[0].name),
       status: `Opened ${list[0].name}`,
     });
-    if (session) Promise.all(list.map(async (f) => ({ name: f.name, data: await f.arrayBuffer() }))).then(session.setFiles);
+    filesListeners.forEach((f) => f(list));
   } catch (e) {
     setState("status", `Could not open the file: ${(e as Error).message}. See docs/FORMATS.md for supported formats.`);
   } finally {
@@ -322,48 +330,3 @@ export async function exportInterop(id: string) {
     setDocError((e as Error).message);
   }
 }
-
-// ---------- live share ----------
-
-let session: HostSession | null = null;
-export const [shareLink, setShareLink] = createSignal("");
-export const [peers, setPeers] = createSignal(0);
-export const [follow, setFollow] = createSignal(true);
-let stopCamera: (() => void) | undefined;
-
-export async function startShare() {
-  if (!state.files.length) return;
-  const list = await Promise.all(state.files.map(async (f) => ({ name: f.name, data: await f.arrayBuffer() })));
-  session = (await p2p()).host(list);
-  session.onPeers(setPeers);
-  setShareLink(session.link);
-  let last = "";
-  stopCamera = onCamera(() => {
-    if (!follow() || !engine) return;
-    const cam = engine.getCamera();
-    const key = JSON.stringify(cam);
-    if (key !== last) {
-      last = key;
-      session?.sendCamera(cam);
-    }
-  });
-}
-
-export async function stopShare() {
-  stopCamera?.();
-  await session?.stop();
-  session = null;
-  setShareLink("");
-  setPeers(0);
-}
-
-export async function joinShare(link: { room: string; key: string }) {
-  setState("status", "Connecting to the presenter… (peer-to-peer, nothing is uploaded to a server)");
-  (await p2p()).join(link, {
-    files: (list) => show(list.map((f) => new File([f.data], f.name))),
-    camera: (c) => engine?.setCamera(c),
-    progress: (p) => setState("status", `Receiving model… ${Math.round(p * 100)}%`),
-    host: (ok) => !ok && setState("status", "Presenter disconnected. The last model stays on screen."),
-  });
-}
-

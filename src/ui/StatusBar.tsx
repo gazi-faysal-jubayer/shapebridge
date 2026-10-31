@@ -2,7 +2,7 @@ import { Show } from "solid-js";
 import ShieldCheck from "lucide-solid/icons/shield-check";
 import { state } from "../state/store";
 import { convert } from "../viewer/math";
-import * as c from "../controller";
+import { live } from "../live";
 
 export function StatusBar() {
   const coord = (v: number) => convert(v, state.modelUnit, state.settings.units).toFixed(2);
@@ -20,8 +20,8 @@ export function StatusBar() {
         </span>
       </Show>
       <span>{state.settings.units}</span>
-      <Show when={c.shareLink()}>
-        <span class="live">● Live · {c.peers()} viewer(s)</span>
+      <Show when={live.role !== "none"}>
+        <span class="live">● Live · {live.peers.length} {live.role === "host" ? "viewer(s)" : "in review"}</span>
       </Show>
       <span class="local" title="Files are opened in this app only. Nothing is uploaded; live share is peer-to-peer.">
         <ShieldCheck size={13} /> Local only

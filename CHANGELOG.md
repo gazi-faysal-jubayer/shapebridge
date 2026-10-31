@@ -6,6 +6,14 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Live review:
+  - names and colours for everyone; viewers follow the presenter's camera, selection, hidden parts, section, explode and display mode
+  - hold **L** for a laser pointer that everyone sees
+  - 3D comment pins and freehand markups that remember their camera; replies and resolve; Markdown review export
+- Host controls: participant list, remove a viewer, a fresh link (revokes the old one), "viewers may export" permission, session expiry (1/8/24 h), optional TURN relay.
+- Offline share: a single self-contained viewer `.html` (~1 MB plus the model) that opens anywhere without the app or a network.
+- A typed, versioned share protocol with strict validation. Guests accept session control only from the host.
+
 - Parametric designer v2 (`shapebridge/2` documents, v1 files migrate automatically):
   - sketches on XY/XZ/YZ with offsets (rectangle, circle, regular polygon, polyline)
   - extrude and cut (with symmetric), revolve, holes (simple, counterbore, countersink)

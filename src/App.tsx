@@ -14,6 +14,9 @@ import { StatusBar } from "./ui/StatusBar";
 import { Welcome } from "./ui/Welcome";
 import { CommandPalette } from "./ui/CommandPalette";
 import { ShareDialog } from "./ui/ShareDialog";
+import { ReviewOverlay } from "./ui/ReviewOverlay";
+import { ReviewPanel } from "./ui/ReviewPanel";
+import { joinShare, live } from "./live";
 
 // the importers the 3D engine understands; keep docs/FORMATS.md in sync
 const accept = [
@@ -54,6 +57,9 @@ export default function App() {
   const guest = parseShareHash(location.hash);
   const [dragging, setDragging] = createSignal(false);
   const [tab, setTab] = createSignal("model");
+  const [rightTab, setRightTab] = createSignal("props");
+  // a review session or a new comment brings the Review tab forward
+  createEffect(() => (live.role !== "none" || live.draft) && setRightTab("review"));
   const [leftW, setLeftW] = createSignal(280);
   const [rightW, setRightW] = createSignal(300);
 
@@ -67,7 +73,11 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     onCleanup(() => window.removeEventListener("keydown", onKey));
     await c.mountViewer(viewport);
-    if (guest) c.joinShare(guest);
+    if (guest) joinShare(guest);
+    // a different share link pasted into an open tab must join that room, not keep the old one
+    const onHash = () => parseShareHash(location.hash) && location.reload();
+    window.addEventListener("hashchange", onHash);
+    onCleanup(() => window.removeEventListener("hashchange", onHash));
   });
 
   const onDrop = (e: DragEvent) => {
@@ -123,6 +133,7 @@ export default function App() {
             <Welcome />
           </Show>
           <Show when={state.files.length}>
+            <ReviewOverlay />
             <ViewCube />
             <ToolStrip />
           </Show>
@@ -139,7 +150,23 @@ export default function App() {
         <Show when={state.settings.showRight && state.files.length}>
           <Splitter onDrag={(dx) => setRightW((w) => Math.min(Math.max(w - dx, 220), 520))} />
           <aside class="side right" style={{ width: `${rightW()}px` }}>
-            <Properties />
+            <Tabs value={rightTab()} onChange={setRightTab} class="tabs">
+              <Tabs.List class="tab-list">
+                <Tabs.Trigger class="tab" value="props">
+                  Properties
+                </Tabs.Trigger>
+                <Tabs.Trigger class="tab" value="review">
+                  Review{live.comments.length ? ` (${live.comments.length})` : ""}
+                </Tabs.Trigger>
+                <Tabs.Indicator class="tab-indicator" />
+              </Tabs.List>
+              <Tabs.Content class="tab-body" value="props">
+                <Properties />
+              </Tabs.Content>
+              <Tabs.Content class="tab-body" value="review">
+                <ReviewPanel />
+              </Tabs.Content>
+            </Tabs>
           </aside>
         </Show>
       </main>
