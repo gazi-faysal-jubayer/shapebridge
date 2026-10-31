@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- CI: a dependency audit (`npm audit` for runtime packages, `cargo audit` for the desktop shell) and a launch smoke test that starts every desktop build and saves a screenshot.
 - CAD-style workspace:
   - a ribbon command bar (Features, Sketch, Evaluate, Review, View, Convert) with an original icon set
   - a feature history tree with origin planes, Equations, right-click commands, rename and a draggable rollback bar
