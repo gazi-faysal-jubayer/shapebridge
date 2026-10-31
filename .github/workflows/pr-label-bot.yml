@@ -1,0 +1,76 @@
+# Contributors without triage rights can label their own PRs:
+#   /bot add-label bug-fix, viewer
+#   /bot remove-label viewer
+# Only labels in ALLOWED can be changed, and only by the PR author or a maintainer.
+# pull_request_target and issue_comment run with a write token, so this must never check out PR code.
+name: PR label bot
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+env:
+  ALLOWED: "crash,bug-fix,enhancement,QoL,optimization,SECURITY,format,viewer,converter,parametric,interop,share,desktop,web,UI/UX,build,test,dependencies,documentation"
+
+jobs:
+  greet:
+    if: >-
+      github.event_name == 'pull_request_target'
+      && !contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const first = ["FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER"].includes(pr.author_association);
+            const labels = process.env.ALLOWED.split(",").map((l) => "`" + l + "`").join(", ");
+            const body = [
+              `Hi @${pr.user.login}, thanks for the PR!` + (first ? ` Please skim [CONTRIBUTING.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/CONTRIBUTING.md) for what reviewers look for.` : ""),
+              "",
+              "You can label it yourself with a comment such as `/bot add-label bug-fix, viewer` or `/bot remove-label viewer`.",
+              `Allowed labels: ${labels}.`,
+              "",
+              "Installers for every OS appear under **Checks → Build all → Summary → Artifacts** once the build finishes.",
+            ].join("\n");
+            await github.rest.issues.createComment({ ...context.repo, issue_number: pr.number, body });
+
+  label:
+    if: >-
+      github.event_name == 'issue_comment'
+      && github.event.issue.pull_request != null
+      && startsWith(github.event.comment.body, '/bot ')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const { comment, issue } = context.payload;
+            const isAuthor = comment.user.login === issue.user.login;
+            const isMaintainer = ["OWNER", "MEMBER", "COLLABORATOR"].includes(comment.author_association);
+            const react = (content) => github.rest.reactions.createForIssueComment({ ...context.repo, comment_id: comment.id, content });
+            if (!isAuthor && !isMaintainer) return react("-1");
+
+            const allowed = new Set(process.env.ALLOWED.split(","));
+            const m = /^\/bot (add|remove)-label\s+(.+)$/m.exec(comment.body.trim());
+            if (!m) return react("confused");
+            const requested = m[2].split(",").map((s) => s.trim()).filter(Boolean);
+            const ok = requested.filter((l) => allowed.has(l));
+            const rejected = requested.filter((l) => !allowed.has(l));
+
+            for (const name of ok) {
+              if (m[1] === "add") await github.rest.issues.addLabels({ ...context.repo, issue_number: issue.number, labels: [name] });
+              else await github.rest.issues.removeLabel({ ...context.repo, issue_number: issue.number, name }).catch((e) => { if (e.status !== 404) throw e; });
+            }
+            if (rejected.length) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number,
+                body: `Not allowed: ${rejected.map((l) => "`" + l + "`").join(", ")}. Allowed labels: ${[...allowed].map((l) => "`" + l + "`").join(", ")}.` });
+            }
+            await react(ok.length ? "+1" : "confused");

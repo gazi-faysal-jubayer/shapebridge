@@ -1,0 +1,97 @@
+{
+  "format": "shapebridge/1",
+  "name": "bracket",
+  "units": "mm",
+  "params": [
+    {
+      "name": "width",
+      "expr": "80",
+      "note": "overall length"
+    },
+    {
+      "name": "depth",
+      "expr": "40"
+    },
+    {
+      "name": "thickness",
+      "expr": "8"
+    },
+    {
+      "name": "boss_r",
+      "expr": "12"
+    },
+    {
+      "name": "boss_h",
+      "expr": "thickness * 2"
+    },
+    {
+      "name": "hole_r",
+      "expr": "boss_r / 2"
+    }
+  ],
+  "features": [
+    {
+      "id": "base",
+      "kind": "box",
+      "op": "add",
+      "at": [
+        "0",
+        "0",
+        "0"
+      ],
+      "size": [
+        "width",
+        "depth",
+        "thickness"
+      ]
+    },
+    {
+      "id": "boss",
+      "kind": "cylinder",
+      "op": "add",
+      "at": [
+        "width / 2",
+        "depth / 2",
+        "thickness"
+      ],
+      "radius": "boss_r",
+      "height": "boss_h"
+    },
+    {
+      "id": "hole",
+      "kind": "cylinder",
+      "op": "cut",
+      "at": [
+        "width / 2",
+        "depth / 2",
+        "0"
+      ],
+      "radius": "hole_r",
+      "height": "thickness + boss_h"
+    },
+    {
+      "id": "slot_l",
+      "kind": "cylinder",
+      "op": "cut",
+      "at": [
+        "thickness * 1.5",
+        "depth / 2",
+        "0"
+      ],
+      "radius": "thickness / 2",
+      "height": "thickness"
+    },
+    {
+      "id": "slot_r",
+      "kind": "cylinder",
+      "op": "cut",
+      "at": [
+        "width - thickness * 1.5",
+        "depth / 2",
+        "0"
+      ],
+      "radius": "thickness / 2",
+      "height": "thickness"
+    }
+  ]
+}

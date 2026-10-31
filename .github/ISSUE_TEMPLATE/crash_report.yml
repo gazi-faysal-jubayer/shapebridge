@@ -1,0 +1,88 @@
+name: 💥 Crash report
+description: ShapeBridge closes on its own, freezes, stops responding or shows a blank window
+labels: ["crash", "To be validated"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Sorry about the crash. This form asks for what we need to find it.**
+  - type: checkboxes
+    attributes:
+      label: Is the crash reproducible in the latest nightly build?
+      description: Get it from [nightly builds](https://github.com/gazi-faysal-jubayer/shapebridge/releases/tag/nightly-builds).
+      options:
+        - label: I checked the latest nightly build and it still crashes
+          required: true
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this crash?
+      options:
+        - label: I searched the existing issues
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: ShapeBridge version
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - Windows desktop
+        - macOS desktop
+        - Linux desktop
+        - Web
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: OS version and GPU
+      placeholder: e.g. Windows 11 24H2, NVIDIA RTX 3060, driver 566.14
+    validations:
+      required: true
+  - type: dropdown
+    id: when
+    attributes:
+      label: When does it happen?
+      options:
+        - On startup
+        - While opening a file
+        - While exporting
+        - While editing parameters
+        - While sharing / receiving a live share
+        - Randomly
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often?
+      options:
+        - Every time
+        - Often
+        - Rarely
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce_steps
+    attributes:
+      label: How to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: File, logs and crash details
+      description: |
+        - The file that triggers it, if you can share it publicly (zip it).
+        - Desktop: run ShapeBridge from a terminal and paste the output.
+        - Web: F12 → Console, then paste errors.
+        - Windows: Event Viewer → Windows Logs → Application, entries for `shapebridge.exe`.
+        - macOS: Console.app → Crash Reports → `ShapeBridge`.
+    validations:
+      required: true

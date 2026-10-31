@@ -1,0 +1,663 @@
+{
+  "labels": [
+    { "name": "bug", "color": "d73a4a", "description": "Something isn't working" },
+    { "name": "crash", "color": "b60205", "description": "Crashes, hangs, freezes and blank windows" },
+    { "name": "regression", "color": "e11d48", "description": "Worked in an earlier version" },
+    { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" },
+    { "name": "QoL", "color": "c5def5", "description": "Small usability or workflow improvement" },
+    { "name": "optimization", "color": "bfdadc", "description": "Speed, memory or bundle-size improvement to existing behaviour" },
+    { "name": "bug-fix", "color": "0e8a16", "description": "PR: fix for incorrect behaviour, not a crash" },
+    { "name": "SECURITY", "color": "000000", "description": "May affect security, privacy or data integrity" },
+    { "name": "format", "color": "5319e7", "description": "File format support (read, write, bridges)" },
+    { "name": "viewer", "color": "0d9488", "description": "Area: 3D viewer, navigation, measure, section" },
+    { "name": "converter", "color": "0f766e", "description": "Area: export and conversion" },
+    { "name": "parametric", "color": "14b8a6", "description": "Area: parametric designer, kernel, doc model" },
+    { "name": "interop", "color": "2dd4bf", "description": "Area: FreeCAD, OpenSCAD, CadQuery, Fusion 360 and other exports" },
+    { "name": "share", "color": "5eead4", "description": "Area: live peer-to-peer sharing" },
+    { "name": "desktop", "color": "115e59", "description": "Area: Tauri shell, installers, OS integration" },
+    { "name": "web", "color": "99f6e4", "description": "Area: web viewer / GitHub Pages" },
+    { "name": "UI/UX", "color": "f9d0c4", "description": "Interface layout, wording or interaction" },
+    { "name": "build", "color": "fbca04", "description": "Build system, CI workflows, packaging" },
+    { "name": "test", "color": "fef2c0", "description": "Automated test additions and fixes" },
+    { "name": "dependencies", "color": "0366d6", "description": "Updates a dependency" },
+    { "name": "github_actions", "color": "000000", "description": "Updates GitHub Actions code" },
+    { "name": "documentation", "color": "0075ca", "description": "Docs and guides" },
+    { "name": "agent-tooling", "color": "8b5cf6", "description": "AI agent hooks, skills, MCP, plugins" },
+    { "name": "To be validated", "color": "ededed", "description": "New report: a maintainer needs to reproduce it" },
+    { "name": "Need more information", "color": "d4c5f9", "description": "Waiting for details from the reporter (stale after 30 days)" },
+    { "name": "wait for response", "color": "d4c5f9", "description": "PR: waiting for the author (stale after 60 days)" },
+    { "name": "Non reproducible", "color": "cccccc", "description": "Could not reproduce" },
+    { "name": "duplicate", "color": "cfd3d7", "description": "Already reported" },
+    { "name": "wontfix", "color": "ffffff", "description": "Will not be worked on" },
+    { "name": "upstream bug", "color": "fbca04", "description": "Bug in a dependency; linked upstream" },
+    { "name": "nightly build", "color": "c2e0c6", "description": "Fixed in main; available in nightly-builds" },
+    { "name": "Community testers wanted", "color": "7057ff", "description": "Looking for testers and feedback" },
+    { "name": "stale", "color": "eeeeee", "description": "No recent activity" },
+    { "name": "good first issue", "color": "7057ff", "description": "Good for newcomers" },
+    { "name": "help wanted", "color": "008672", "description": "Extra attention is needed" },
+    { "name": "research", "color": "d876e3", "description": "Spike or investigation, outcome is a doc or prototype" },
+    { "name": "priority: p0", "color": "b60205", "description": "Broken for everyone; fix now" },
+    { "name": "priority: p1", "color": "d93f0b", "description": "Next release" },
+    { "name": "priority: p2", "color": "fbca04", "description": "Later" }
+  ],
+  "milestones": [
+    { "title": "M0 Foundation", "description": "Repo, CI, docs, agent tooling, thin vertical slice (v0.1)" },
+    { "title": "M1 Viewer", "description": "Model tree, measure, section, offline readers, OS integration (v0.2)" },
+    { "title": "M1b Formats", "description": "More readers/writers: assimp, USD, IFC write, DXF, DWG plugin (v0.3)" },
+    { "title": "M2 Converter", "description": "B-rep conversions, 2D drawings, batch, CLI (v0.4)" },
+    {
+      "title": "M2b Native bridges",
+      "description": "Proprietary CAD via the user's installed apps; thumbnails; clean-room research (v0.5)"
+    },
+    { "title": "M3 Parametric", "description": "Feature editing, more features, sketcher, undo (v0.6)" },
+    { "title": "M4 Share", "description": "Presenter tools, permissions, offline share, TURN (v0.7)" },
+    { "title": "M5 Interop", "description": "Verified FreeCAD/OpenSCAD/CadQuery/Fusion, SolidWorks and Onshape generators (v0.8)" },
+    { "title": "M6 Release & ecosystem", "description": "Signing, updater, package managers, MCP server, i18n (v1.0)" }
+  ],
+  "issues": [
+    {
+      "title": "Add Content-Security-Policy to the desktop app",
+      "milestone": "M0 Foundation",
+      "labels": ["SECURITY", "desktop", "priority: p1"],
+      "size": "S",
+      "goal": "Replace `csp: null` in tauri.conf.json with a strict policy.",
+      "accept": [
+        "Allows self, blob:, jsDelivr scripts/wasm used by OV readers, wss: for Nostr relays",
+        "App opens STEP, IFC and 3DM and can share",
+        "Documented in docs/plans/security-privacy.md"
+      ],
+      "files": ["src-tauri/tauri.conf.json"]
+    },
+    {
+      "title": "Dependency audit in CI (npm audit, cargo audit)",
+      "milestone": "M0 Foundation",
+      "labels": ["build", "SECURITY", "good first issue"],
+      "size": "S",
+      "goal": "Fail CI on high-severity advisories in runtime dependencies.",
+      "accept": ["`npm audit --omit=dev --audit-level=high` step in build_all.yml", "cargo audit job for src-tauri"],
+      "files": [".github/workflows/build_all.yml"]
+    },
+    {
+      "title": "Verify desktop installers launch on all OSes",
+      "milestone": "M0 Foundation",
+      "labels": ["desktop", "test", "Community testers wanted"],
+      "size": "S",
+      "goal": "Confirm the first nightly-builds installers start and open samples/plate.step on Windows, macOS (arm64 + x64) and Linux.",
+      "accept": ["A comment per OS with version and screenshot", "Bugs found are filed separately"],
+      "files": []
+    },
+
+    {
+      "title": "Model tree panel (assemblies, names, colours, visibility)",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "enhancement", "priority: p1"],
+      "size": "M",
+      "goal": "Show the imported model's node/mesh hierarchy with toggles.",
+      "accept": ["Tree from OV Model nodes with names from STEP/IFC", "Click selects + highlights, eye icon hides", "Keyboard accessible"],
+      "files": ["src/App.tsx", "src/viewer/viewer.ts"]
+    },
+    {
+      "title": "Measure tool: distance, edge length, bounding box",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "enhancement", "priority: p1"],
+      "size": "M",
+      "goal": "Click two points to measure distance; show model bounding box dimensions.",
+      "accept": ["Snaps to vertices", "Values in mm with 2 decimals", "Visible to share guests (follow-up in M4)"],
+      "files": ["src/viewer/measure.ts"]
+    },
+    {
+      "title": "Section plane with cap",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "enhancement"],
+      "size": "M",
+      "goal": "Clip the model along X/Y/Z with a draggable offset.",
+      "accept": ["three.js clipping planes", "Optional cap fill", "Reset button"],
+      "files": ["src/viewer/section.ts"]
+    },
+    {
+      "title": "Standard views, ortho/perspective, Z-up/Y-up toggle",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "QoL", "good first issue"],
+      "size": "S",
+      "goal": "Front/top/right/iso buttons, projection toggle and an up-axis switch (STEP files often show Y-up today).",
+      "accept": ["Buttons in toolbar", "Choice remembered in localStorage"],
+      "files": ["src/viewer/viewer.ts", "src/App.tsx"]
+    },
+    {
+      "title": "Display modes: shaded, shaded+edges, wireframe",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "QoL", "good first issue"],
+      "size": "S",
+      "goal": "Toggle edge display and wireframe.",
+      "accept": ["Uses OV EdgeSettings", "Persisted per user"],
+      "files": ["src/viewer/viewer.ts"]
+    },
+    {
+      "title": "Offline readers: bundle occt-import-js, rhino3dm, web-ifc",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "desktop", "priority: p1"],
+      "size": "M",
+      "goal": "The OV engine fetches these from jsDelivr; desktop must work offline.",
+      "accept": [
+        "Readers served from the app bundle, lazy-loaded",
+        "CDN only as fallback on web",
+        "Installer size impact noted in performance-budget.md"
+      ],
+      "files": ["src/viewer/viewer.ts", "vite.config.ts"]
+    },
+    {
+      "title": "OS file associations and open-from-argv",
+      "milestone": "M1 Viewer",
+      "labels": ["desktop", "enhancement", "priority: p1"],
+      "size": "M",
+      "goal": "Double-clicking a .step opens it in ShapeBridge.",
+      "accept": [
+        "Rust reads argv / macOS open-file events and emits to the frontend",
+        "Single-instance: second launch opens in the running window"
+      ],
+      "files": ["src-tauri/src/main.rs", "src/App.tsx"]
+    },
+    {
+      "title": "Open multi-file models (OBJ+MTL+textures, glTF+bin) and recent files",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "QoL"],
+      "size": "S",
+      "goal": "Folder drop and a recent-files list.",
+      "accept": ["Dropping a folder loads all files", "Recent list (desktop) with 10 entries"],
+      "files": ["src/App.tsx"]
+    },
+    {
+      "title": "Large model performance (5M triangles)",
+      "milestone": "M1 Viewer",
+      "labels": ["viewer", "optimization"],
+      "size": "L",
+      "goal": "Keep the UI responsive with big meshes.",
+      "accept": ["Import off the main thread", "Benchmark in docs/plans/performance-budget.md"],
+      "files": ["src/viewer/"]
+    },
+    {
+      "title": "Format smoke tests for every sample",
+      "milestone": "M1 Viewer",
+      "labels": ["test", "format", "good first issue"],
+      "size": "S",
+      "goal": "Each file in samples/ imports with >0 triangles in CI.",
+      "accept": ["Vitest with a DOM environment", "Runs in build_all"],
+      "files": ["src/viewer/viewer.test.ts"]
+    },
+    {
+      "title": "Playwright E2E: open, export, parametric edit, two-tab share",
+      "milestone": "M1 Viewer",
+      "labels": ["test"],
+      "size": "M",
+      "goal": "End-to-end regression suite.",
+      "accept": ["Runs headless in CI against `npm run preview`", "Share test uses two pages"],
+      "files": ["e2e/"]
+    },
+
+    {
+      "title": "assimpjs catch-all reader (Blender, LWO, X, AC3D, MD5…)",
+      "milestone": "M1b Formats",
+      "labels": ["format", "viewer"],
+      "size": "M",
+      "goal": "Read the ~40 formats assimp supports, lazily.",
+      "accept": ["Loaded only for unknown extensions", "FORMATS.md updated"],
+      "files": ["src/io/assimp.ts"]
+    },
+    {
+      "title": "USD/USDZ, X3D, VTK and point cloud (PCD/XYZ) readers",
+      "milestone": "M1b Formats",
+      "labels": ["format", "viewer"],
+      "size": "M",
+      "goal": "Use three.js loaders where available.",
+      "accept": ["Samples + smoke tests", "FORMATS.md updated"],
+      "files": ["src/io/"]
+    },
+    {
+      "title": "3MF, AMF, FBX, DAE and VRML writers",
+      "milestone": "M1b Formats",
+      "labels": ["format", "converter"],
+      "size": "M",
+      "goal": "Round out mesh export.",
+      "accept": ["Each export re-imports correctly", "3MF validated with a slicer"],
+      "files": ["src/io/"]
+    },
+    {
+      "title": "IFC writer for simple solids",
+      "milestone": "M1b Formats",
+      "labels": ["format", "converter"],
+      "size": "M",
+      "goal": "Export parametric parts as IFC (web-ifc).",
+      "accept": ["Opens in BIMcollab Zoom / Blender BIM"],
+      "files": ["src/io/ifc.ts"]
+    },
+    {
+      "title": "DXF reader for 2D drawings",
+      "milestone": "M1b Formats",
+      "labels": ["format", "viewer"],
+      "size": "M",
+      "goal": "View DXF lines, arcs, polylines, text.",
+      "accept": ["dxf-parser lazy-loaded", "Pan/zoom in 2D mode"],
+      "files": ["src/io/dxf.ts"]
+    },
+    {
+      "title": "DWG opt-in plugin (LibreDWG WASM)",
+      "milestone": "M1b Formats",
+      "labels": ["format", "help wanted"],
+      "size": "L",
+      "goal": "Read DWG without making the core GPL.",
+      "accept": ["Separate repo + separate download, GPL", "Core detects and loads it if installed"],
+      "files": []
+    },
+    {
+      "title": "ODA File Converter bridge for DWG/DGN",
+      "milestone": "M1b Formats",
+      "labels": ["format", "desktop"],
+      "size": "M",
+      "goal": "If the free ODA File Converter is installed, convert DWG/DGN to DXF and open.",
+      "accept": ["Auto-detect install path per OS", "Clear message if missing"],
+      "files": ["bridges/oda/"]
+    },
+
+    {
+      "title": "Custom OCCT build with IGES; STEP⇄IGES⇄BREP conversion",
+      "milestone": "M2 Converter",
+      "labels": ["converter", "format", "priority: p1"],
+      "size": "M",
+      "goal": "Exact B-rep conversions for imported files, not just parametric parts.",
+      "accept": ["Import STEP/IGES into the kernel worker, export any of the three", "WASM size budget respected"],
+      "files": ["src/kernel/"]
+    },
+    {
+      "title": "Tessellation quality slider",
+      "milestone": "M2 Converter",
+      "labels": ["converter", "QoL", "good first issue"],
+      "size": "S",
+      "goal": "Control linear/angular deflection for mesh export of B-rep.",
+      "accept": ["Coarse/normal/fine presets", "Used by STL/GLB export of parametric parts"],
+      "files": ["src/kernel/occt.worker.ts"]
+    },
+    {
+      "title": "2D drawing export: projected views to DXF/SVG/PDF",
+      "milestone": "M2 Converter",
+      "labels": ["converter", "enhancement"],
+      "size": "L",
+      "goal": "Hidden-line-removed front/top/side views.",
+      "accept": ["OCCT HLR in worker", "DXF + SVG + PDF output"],
+      "files": ["src/kernel/"]
+    },
+    {
+      "title": "Faceted STEP from meshes (labelled lossy)",
+      "milestone": "M2 Converter",
+      "labels": ["converter"],
+      "size": "M",
+      "goal": "Let mesh-only files reach STEP-only tools.",
+      "accept": ["Warning shown before export", "Face count limit"],
+      "files": ["src/kernel/"]
+    },
+    {
+      "title": "Batch convert dialog",
+      "milestone": "M2 Converter",
+      "labels": ["converter", "desktop"],
+      "size": "M",
+      "goal": "Convert a folder of files to one format.",
+      "accept": ["Progress + per-file errors", "Desktop only"],
+      "files": ["src/"]
+    },
+    {
+      "title": "CLI: npx shapebridge convert",
+      "milestone": "M2 Converter",
+      "labels": ["converter", "enhancement"],
+      "size": "M",
+      "goal": "Headless conversion with the same code in Node.",
+      "accept": ["`shapebridge convert in.step out.glb`", "Published to npm"],
+      "files": ["cli/"]
+    },
+    {
+      "title": "Units and scale on export",
+      "milestone": "M2 Converter",
+      "labels": ["converter", "QoL", "good first issue"],
+      "size": "S",
+      "goal": "Choose mm/cm/m/in when exporting.",
+      "accept": ["Applies to mesh and STEP"],
+      "files": ["src/viewer/viewer.ts"]
+    },
+
+    {
+      "title": "Preview thumbnails for SolidWorks/Inventor/Solid Edge/CATIA files",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "enhancement"],
+      "size": "M",
+      "goal": "Read the embedded preview bitmap from OLE compound files (our own container parsing, no vendor code).",
+      "accept": ["Shows thumbnail + 'install a bridge to open' message", "Tested with files we created"],
+      "files": ["src/io/thumbnail.ts"]
+    },
+    {
+      "title": "Bridge runner (detect, run, timeout, progress)",
+      "milestone": "M2b Native bridges",
+      "labels": ["desktop", "format", "priority: p1"],
+      "size": "M",
+      "goal": "Rust side of the bridge contract in bridges/README.md.",
+      "accept": ["Detects installed apps", "Runs script with timeout", "Opens resulting STEP"],
+      "files": ["src-tauri/src/", "bridges/README.md"]
+    },
+    {
+      "title": "SolidWorks bridge (COM → STEP + custom properties)",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "help wanted"],
+      "size": "M",
+      "goal": "Open .sldprt/.sldasm via the user's SolidWorks.",
+      "accept": ["PowerShell COM script", "Tested versions listed"],
+      "files": ["bridges/solidworks/"]
+    },
+    {
+      "title": "Inventor bridge (Inventor / Apprentice)",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "help wanted"],
+      "size": "M",
+      "goal": "Open .ipt/.iam via Inventor or the free Apprentice server.",
+      "accept": ["Exports STEP + parameters JSON"],
+      "files": ["bridges/inventor/"]
+    },
+    {
+      "title": "Fusion 360 add-in bridge",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "interop", "help wanted"],
+      "size": "M",
+      "goal": "Export STEP + User Parameters JSON from Fusion for ShapeBridge.",
+      "accept": ["Add-in installable from the repo"],
+      "files": ["bridges/fusion360/"]
+    },
+    {
+      "title": "CATIA, Solid Edge, NX and Creo bridges",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "help wanted"],
+      "size": "L",
+      "goal": "One bridge per app, owned by community members with licences.",
+      "accept": ["Each follows the bridge contract"],
+      "files": ["bridges/"]
+    },
+    {
+      "title": "SketchUp SDK opt-in plugin",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "help wanted"],
+      "size": "M",
+      "goal": "Read .skp through the free (closed) SketchUp SDK, distributed separately.",
+      "accept": ["Not part of the core download"],
+      "files": []
+    },
+    {
+      "title": "Research: clean-room Parasolid text (.x_t) reader",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "research"],
+      "size": "L",
+      "goal": "Document structure from self-made samples and prototype a reader.",
+      "accept": ["docs/formats/x_t.md", "Follows native-formats-research.md rules"],
+      "files": ["docs/formats/"]
+    },
+    {
+      "title": "Research: clean-room ACIS text (.sat) reader",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "research"],
+      "size": "L",
+      "goal": "Same as x_t for SAT.",
+      "accept": ["docs/formats/sat.md"],
+      "files": ["docs/formats/"]
+    },
+    {
+      "title": "Research: JT reader from ISO 14306",
+      "milestone": "M2b Native bridges",
+      "labels": ["format", "research"],
+      "size": "L",
+      "goal": "Evaluate a JT reader from the published standard.",
+      "accept": ["Feasibility report + tessellation prototype"],
+      "files": ["docs/formats/"]
+    },
+
+    {
+      "title": "Feature panel: add, edit, reorder, delete, suppress",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "UI/UX", "priority: p1"],
+      "size": "M",
+      "goal": "Edit features in the UI instead of only parameters.",
+      "accept": ["Forms per feature kind", "Validation errors inline"],
+      "files": ["src/App.tsx", "src/model/doc.ts"]
+    },
+    {
+      "title": "Add parameter / rename parameter in the UI",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "QoL", "good first issue"],
+      "size": "S",
+      "goal": "Create, rename (updating references) and delete parameters.",
+      "accept": ["Rename rewrites all expressions", "Delete blocked while referenced"],
+      "files": ["src/App.tsx", "src/model/params.ts"]
+    },
+    {
+      "title": "Features: fillet and chamfer",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "interop"],
+      "size": "M",
+      "goal": "Edge selection by feature + filter (e.g. all vertical edges).",
+      "accept": ["All generators updated (add-feature skill)"],
+      "files": ["src/model/doc.ts", "src/kernel/build.ts", "src/interop/"]
+    },
+    {
+      "title": "Features: sketch extrude and revolve",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "interop"],
+      "size": "L",
+      "goal": "Polyline/arc/circle profiles with parametric points.",
+      "accept": ["All generators updated"],
+      "files": ["src/model/", "src/kernel/", "src/interop/"]
+    },
+    {
+      "title": "Features: linear/polar pattern, shell, hole",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "interop"],
+      "size": "L",
+      "goal": "Common machining features.",
+      "accept": ["All generators updated"],
+      "files": ["src/model/", "src/kernel/", "src/interop/"]
+    },
+    {
+      "title": "Sketcher with constraints (planegcs)",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "enhancement"],
+      "size": "L",
+      "goal": "Interactive 2D sketcher with dimensional and geometric constraints.",
+      "accept": ["Solver in WASM, lazy-loaded"],
+      "files": ["src/sketch/"]
+    },
+    {
+      "title": "Undo/redo, autosave and .sbridge.json migrations",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "QoL"],
+      "size": "M",
+      "goal": "Safe editing history and forward-compatible files.",
+      "accept": ["Ctrl+Z/Ctrl+Y", "format version bump path"],
+      "files": ["src/model/doc.ts"]
+    },
+    {
+      "title": "Units and trig functions in expressions",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "interop"],
+      "size": "S",
+      "goal": "deg/mm units and sin/cos/tan with per-target degree/radian mapping.",
+      "accept": ["Printer handles Python radians vs others degrees", "Tests per dialect"],
+      "files": ["src/model/params.ts"]
+    },
+    {
+      "title": "Mass properties: volume, area, centre of mass",
+      "milestone": "M3 Parametric",
+      "labels": ["parametric", "good first issue"],
+      "size": "S",
+      "goal": "Show replicad measurements in the panel.",
+      "accept": ["Updates on rebuild"],
+      "files": ["src/kernel/occt.worker.ts", "src/App.tsx"]
+    },
+
+    {
+      "title": "Presenter tools: laser pointer and comment pins",
+      "milestone": "M4 Share",
+      "labels": ["share", "enhancement"],
+      "size": "M",
+      "goal": "Point at and pin comments on the model, synced to guests.",
+      "accept": ["Guests can add pins too", "Pins cleared on stop"],
+      "files": ["src/share/share.ts"]
+    },
+    {
+      "title": "Share permissions: view-only vs allow download",
+      "milestone": "M4 Share",
+      "labels": ["share", "SECURITY"],
+      "size": "S",
+      "goal": "Host decides whether guests can export.",
+      "accept": ["Guest export hidden unless allowed"],
+      "files": ["src/share/", "src/App.tsx"]
+    },
+    {
+      "title": "Revoke a viewer and session expiry",
+      "milestone": "M4 Share",
+      "labels": ["share", "SECURITY"],
+      "size": "S",
+      "goal": "Kick one viewer; auto-stop after N hours.",
+      "accept": ["Viewer list with names", "Expiry setting"],
+      "files": ["src/share/"]
+    },
+    {
+      "title": "TURN server setting for strict networks",
+      "milestone": "M4 Share",
+      "labels": ["share"],
+      "size": "S",
+      "goal": "Let users add a TURN server when P2P fails.",
+      "accept": ["Settings field", "Docs on free/self-hosted TURN"],
+      "files": ["src/share/share.ts"]
+    },
+    {
+      "title": "Offline share: self-contained viewer HTML",
+      "milestone": "M4 Share",
+      "labels": ["share", "enhancement", "priority: p1"],
+      "size": "M",
+      "goal": "Export one .html with the model embedded as GLB for email/Drive.",
+      "accept": ["Opens offline in any browser", "< 1.5 MB + model"],
+      "files": ["src/share/offline.ts"]
+    },
+    {
+      "title": "Large transfer progress and resume",
+      "milestone": "M4 Share",
+      "labels": ["share", "QoL"],
+      "size": "M",
+      "goal": "Show host-side progress per viewer; resume after reconnect.",
+      "accept": ["Progress bar on both sides"],
+      "files": ["src/share/share.ts"]
+    },
+
+    {
+      "title": "CI: run generated FreeCAD macro headless and compare volume",
+      "milestone": "M5 Interop",
+      "labels": ["interop", "test", "priority: p1"],
+      "size": "M",
+      "goal": "Prove the FreeCAD export works.",
+      "accept": ["freecadcmd job", "Volume within 0.1% of ShapeBridge"],
+      "files": [".github/workflows/"]
+    },
+    {
+      "title": "CI: run generated OpenSCAD and CadQuery outputs",
+      "milestone": "M5 Interop",
+      "labels": ["interop", "test", "good first issue"],
+      "size": "S",
+      "goal": "Execute the golden scripts in CI.",
+      "accept": ["openscad -o out.stl", "pip install cadquery; python bracket.py"],
+      "files": [".github/workflows/"]
+    },
+    {
+      "title": "Fusion 360: manual test protocol + parametric x/y positions",
+      "milestone": "M5 Interop",
+      "labels": ["interop", "Community testers wanted"],
+      "size": "M",
+      "goal": "Verify the script in Fusion and bind positions to parameters.",
+      "accept": ["Checklist in docs/INTEROP.md", "No baked positions"],
+      "files": ["src/interop/fusion360.ts"]
+    },
+    {
+      "title": "SolidWorks .swb macro generator",
+      "milestone": "M5 Interop",
+      "labels": ["interop", "help wanted"],
+      "size": "M",
+      "goal": "Text VBA macro that builds features driven by global variables.",
+      "accept": ["Tested in SolidWorks by a volunteer"],
+      "files": ["src/interop/solidworks.ts"]
+    },
+    {
+      "title": "Onshape FeatureScript generator",
+      "milestone": "M5 Interop",
+      "labels": ["interop"],
+      "size": "M",
+      "goal": "FeatureScript with #variables.",
+      "accept": ["Paste into a Feature Studio and it works"],
+      "files": ["src/interop/onshape.ts"]
+    },
+    {
+      "title": "FreeCAD PartDesign (sketch-based) variant",
+      "milestone": "M5 Interop",
+      "labels": ["interop"],
+      "size": "M",
+      "goal": "Body/Pad/Pocket output, closer to how FreeCAD users model.",
+      "accept": ["Option in export menu"],
+      "files": ["src/interop/freecad.ts"]
+    },
+    {
+      "title": "Import parameters back from OpenSCAD / CadQuery / FreeCAD",
+      "milestone": "M5 Interop",
+      "labels": ["interop", "enhancement"],
+      "size": "M",
+      "goal": "Round-trip edited parameters into the .sbridge.json.",
+      "accept": ["Parses top-level literals / build() defaults / Params sheet"],
+      "files": ["src/interop/"]
+    },
+
+    {
+      "title": "Code signing (Windows, macOS notarisation) and auto-update",
+      "milestone": "M6 Release & ecosystem",
+      "labels": ["desktop", "build"],
+      "size": "M",
+      "goal": "Trusted installers and in-app updates.",
+      "accept": ["SignPath or equivalent", "Tauri updater"],
+      "files": [".github/workflows/publish_release.yml"]
+    },
+    {
+      "title": "Package managers: winget, Homebrew, Flathub, AUR",
+      "milestone": "M6 Release & ecosystem",
+      "labels": ["desktop", "build", "help wanted"],
+      "size": "M",
+      "goal": "Install with one command on every OS.",
+      "accept": ["winget updater workflow like OrcaSlicer's"],
+      "files": [".github/workflows/"]
+    },
+    {
+      "title": "shapebridge-mcp server",
+      "milestone": "M6 Release & ecosystem",
+      "labels": ["agent-tooling", "enhancement"],
+      "size": "M",
+      "goal": "MCP tools open_model, list_params, set_param, measure, export for AI agents.",
+      "accept": ["Published to npm", "Added to the Claude Code plugin"],
+      "files": ["mcp/"]
+    },
+    {
+      "title": "Internationalisation (en, bn, es, de, zh, ja)",
+      "milestone": "M6 Release & ecosystem",
+      "labels": ["UI/UX", "help wanted"],
+      "size": "M",
+      "goal": "Translatable UI strings.",
+      "accept": ["Language picker", "Locale check workflow"],
+      "files": ["src/i18n/"]
+    },
+    {
+      "title": "Accessibility audit",
+      "milestone": "M6 Release & ecosystem",
+      "labels": ["UI/UX"],
+      "size": "M",
+      "goal": "Keyboard-only use, screen reader labels, contrast.",
+      "accept": ["axe clean", "Documented shortcuts"],
+      "files": ["src/"]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+name,expression,value_mm,note
+width,"80",80,"overall length"
+depth,"40",40,""
+thickness,"8",8,""
+boss_r,"12",12,""
+boss_h,"thickness * 2",16,""
+hole_r,"boss_r / 2",6,""

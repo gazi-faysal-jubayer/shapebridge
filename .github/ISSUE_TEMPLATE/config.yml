@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and help ("how do I…?")
+    url: https://github.com/gazi-faysal-jubayer/shapebridge/discussions/categories/q-a
+    about: Ask and answer usage questions here, not in issues.
+  - name: Ideas and discussion
+    url: https://github.com/gazi-faysal-jubayer/shapebridge/discussions/categories/ideas
+    about: Rough ideas that are not ready to be a feature request yet.
+  - name: Security vulnerability
+    url: https://github.com/gazi-faysal-jubayer/shapebridge/security/advisories/new
+    about: Please report security problems privately, never in a public issue.

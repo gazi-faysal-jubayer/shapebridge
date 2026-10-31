@@ -1,0 +1,111 @@
+name: 🐞 Bug report
+description: ShapeBridge does something wrong but keeps running
+labels: ["bug", "To be validated"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Thanks for taking the time to report a bug.**
+
+        - Feature ideas go in a [Feature request](https://github.com/gazi-faysal-jubayer/shapebridge/issues/new?template=feature_request.yml). Questions go in [Discussions](https://github.com/gazi-faysal-jubayer/shapebridge/discussions).
+        - If the app closes, freezes or goes blank, use the [Crash report](https://github.com/gazi-faysal-jubayer/shapebridge/issues/new?template=crash_report.yml) form instead.
+        - If a file format is not supported at all, use the [Format request](https://github.com/gazi-faysal-jubayer/shapebridge/issues/new?template=format_request.yml) form.
+  - type: checkboxes
+    attributes:
+      label: Is it reproducible in the latest nightly build?
+      description: It may already be fixed. Get it from [nightly builds](https://github.com/gazi-faysal-jubayer/shapebridge/releases/tag/nightly-builds) or the [web viewer](https://gazi-faysal-jubayer.github.io/shapebridge/), which always runs `main`.
+      options:
+        - label: I checked the latest nightly build (or the web viewer) and the bug is still there
+          required: true
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this problem?
+      options:
+        - label: I searched the existing issues, open and closed
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: ShapeBridge version
+      description: Help → About, or the release file name. Write `web` for the web viewer.
+      placeholder: e.g. 0.1.0, nightly 2026-10-31, web
+    validations:
+      required: true
+  - type: input
+    id: working_version
+    attributes:
+      label: Regression compared to a previous version
+      description: Did it work in an earlier version? Which one?
+      placeholder: e.g. 0.1.0
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - Windows desktop
+        - macOS desktop
+        - Linux desktop
+        - Web (Chrome/Edge)
+        - Web (Firefox)
+        - Web (Safari)
+        - Web (mobile)
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: OS / browser version
+      placeholder: e.g. Windows 11 24H2, macOS 15.1, Ubuntu 24.04, Chrome 141
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Viewing a file
+        - Exporting / converting
+        - Parametric designer
+        - FreeCAD / OpenSCAD / CadQuery / Fusion export
+        - Live share
+        - Install / startup
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: file_format
+    attributes:
+      label: File format involved
+      placeholder: e.g. STEP AP214 exported from SolidWorks 2024
+  - type: textarea
+    id: reproduce_steps
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Open plate.step
+        2. Export as GLB
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: What happened? Screenshots or recordings help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files and logs
+      description: |
+        Drag the smallest file that shows the problem here (zip it if GitHub refuses the extension). **Only share files you are allowed to share publicly.**
+        For live-share problems, also attach the browser console output (F12 → Console).

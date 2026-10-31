@@ -1,0 +1,57 @@
+name: ✨ Feature request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [docs/PLAN.md](https://github.com/gazi-faysal-jubayer/shapebridge/blob/main/docs/PLAN.md) first: it may already be planned. If so, 👍 the matching issue instead.
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this feature request?
+      options:
+        - label: I searched the existing issues and the plan
+          required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Viewer
+        - Formats / converter
+        - Parametric designer
+        - Interop with other CAD tools
+        - Live share
+        - Desktop app
+        - Web viewer
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      placeholder: I'm always frustrated when ...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, mock-ups, or links to how other tools do it.
+  - type: checkboxes
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to implement this myself (comment `/assign` to claim it)

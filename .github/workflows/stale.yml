@@ -1,0 +1,51 @@
+name: Stale issues and PRs
+
+on:
+  schedule:
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write # the action keeps its progress in the Actions cache
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v11
+        with:
+          operations-per-run: 200
+          ascending: true
+          stale-issue-label: stale
+          stale-pr-label: stale
+          remove-stale-when-updated: true
+
+          # Issues: only ones waiting on the reporter. Planned work never goes stale.
+          only-issue-labels: "Need more information"
+          days-before-issue-stale: 30
+          days-before-issue-close: 14
+          close-issue-reason: not_planned
+          exempt-all-issue-assignees: true
+          exempt-all-issue-milestones: true
+          stale-issue-message: |
+            We asked for more information 30 days ago and haven't heard back, so this issue will close in 14 days.
+
+            If it still happens on the latest nightly build or the web viewer, add a comment with the details and it will stay open.
+          close-issue-message: |
+            Closed because we didn't hear back after the reminder. Comment here with the requested details and a maintainer can reopen it.
+
+          # PRs: only PRs where we asked the author for something
+          only-pr-labels: "wait for response"
+          days-before-pr-stale: 60
+          days-before-pr-close: 14
+          exempt-draft-pr: true
+          exempt-all-pr-assignees: true
+          delete-branch: false
+          stale-pr-message: |
+            We asked for changes or information 60 days ago and there has been no activity since, so this PR will close in 14 days.
+
+            Leave a comment to keep it open. Pushing commits alone doesn't reset the timer. If you don't have time for it any more, that's fine, just let us know.
+          close-pr-message: |
+            Closed because we didn't hear back after the reminder. Thank you for the work! Reopen it or open a new PR whenever you want to continue.

@@ -1,0 +1,26 @@
+# Comment "/assign" on an issue to claim it, "/unassign" to give it back.
+# Assignments with no activity get a reminder after 7 days and are released after 21.
+name: Assign issue
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  assign:
+    permissions:
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      # v3.0.0 shipped a broken entry point; v2.2 is the version OrcaSlicer runs
+      - uses: takanome-dev/assign-issue-action@v2.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          maintainers: "gazi-faysal-jubayer"
+          days_until_unassign: 21
+          reminder_days: 7
+          max_assignments: 3
+          block_assignment: false

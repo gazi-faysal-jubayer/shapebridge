@@ -1,0 +1,54 @@
+# Architecture
+
+## Layout
+
+```
+src/
+  App.tsx              UI shell: toolbar, parameter panel, viewport, share dialog, guest mode
+  viewer/viewer.ts     wrapper over the Online 3D Viewer engine: load files, camera, mesh export
+  model/params.ts      expression parser/evaluator/printer (no eval), dependency ordering
+  model/doc.ts         .sbridge.json document type, validation (trust boundary), sample part
+  kernel/build.ts      doc → OpenCascade solid (replicad)
+  kernel/occt.worker.ts  runs build.ts off the UI thread, returns STL (display) + STEP (exact)
+  kernel/protocol.ts   promise API over the worker; creates it on first use
+  interop/*.ts         doc → FreeCAD / OpenSCAD / CadQuery / Fusion 360 / CSV
+  share/link.ts        share-link format (kept tiny so the P2P stack stays lazy)
+  share/share.ts       Trystero rooms: host streams files + camera, guest receives
+  platform/save.ts     native save dialog in Tauri, download link on the web
+src-tauri/             Rust shell: plugins (dialog, fs), bundle config, icons
+scripts/               icons, samples, GitHub setup
+samples/               small test models we generated ourselves
+```
+
+## Data flow
+
+**Viewing:** `File[]` → `CadViewer.load` → OV `ThreeModelLoader` chooses an importer by extension. Importers for OCCT, rhino3dm and web-ifc are fetched lazily → three.js scene. OV converts Z-up formats to its Y-up scene. Our camera code assumes Y-up.
+
+**Parametric:** a parameter edit → `structuredClone(doc)` → debounce 300 ms → `resolve(doc)` validates on the main thread for instant errors → `kernel.build(doc)` in the worker → `{stl, step}` → the STL is shown through the same viewer path (so mesh export works for designs too); the STEP is kept for exact export.
+
+**Sharing:** the host calls `joinRoom({appId, password: key}, roomId)`. On each `onPeerJoin` it sends every file (ArrayBuffer + `{name, total}` metadata) to that peer, then broadcasts camera JSON every 200 ms while it changes. The guest page is the same app; `#s=<room>.<key>` in the URL switches it to guest mode. The fragment is never sent to any server.
+
+## Trust boundaries
+
+| Input | Validation |
+|---|---|
+| `.sbridge.json` from disk or a peer | `resolve()`: format tag, identifier names/ids, operator whitelist, cycles, finite and positive sizes |
+| Expressions | own recursive-descent parser; whitelist of operators and two functions; reserved names blocked; `Object.hasOwn` lookup |
+| Generated scripts | every string literal goes through `JSON.stringify`; ids and names are identifiers, so nothing user-controlled reaches code position |
+| Peer file metadata | name reduced to a safe basename (120 chars); file count clamped 1–64; `maxReceiveBytes` 512 MB |
+| CAD files | parsed by third-party readers inside the webview sandbox, OCCT inside a worker |
+
+## Desktop vs web
+
+The same `dist/` runs in both. `platform/save.ts` checks `__TAURI_INTERNALS__` to choose a native save dialog. Tauri's own drag-drop is disabled so the HTML5 drop zone works on every OS.
+
+## Building the desktop app locally
+
+Requires Rust stable plus platform deps ([Tauri prerequisites](https://tauri.app/start/prerequisites/)): MSVC Build Tools + WebView2 on Windows, Xcode CLT on macOS, `libwebkit2gtk-4.1-dev` etc. on Linux.
+
+```bash
+npm run tauri dev      # hot reload
+npm run tauri build    # installers in src-tauri/target/release/bundle/
+```
+
+CI builds all platforms on tag push (`.github/workflows/publish_release.yml`); every PR also gets installers from `build_all.yml`, so contributors don't need every toolchain.

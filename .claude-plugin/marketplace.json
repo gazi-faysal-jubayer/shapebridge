@@ -1,0 +1,14 @@
+{
+  "name": "shapebridge",
+  "owner": { "name": "ShapeBridge contributors" },
+  "metadata": { "description": "Claude Code plugins from the ShapeBridge project." },
+  "plugins": [
+    {
+      "name": "shapebridge",
+      "source": "./plugins/shapebridge",
+      "description": "Author parametric ShapeBridge parts and export them with editable parameters to FreeCAD, OpenSCAD, CadQuery and Fusion 360.",
+      "version": "0.1.0",
+      "category": "design"
+    }
+  ]
+}

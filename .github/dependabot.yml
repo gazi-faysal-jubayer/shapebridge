@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # GitHub Actions: only major updates for first-party actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    ignore:
+      - dependency-name: "actions/*"
+        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
+
+  # npm: group minor/patch into one PR a month; majors arrive one by one for review
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # pinned together: online-3d-viewer bundles a specific three.js
+      - dependency-name: "three"
+      - dependency-name: "@types/three"
+
+  # Rust (Tauri shell)
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "monthly"
+    groups:
+      cargo-minor-patch:
+        update-types: ["minor", "patch"]

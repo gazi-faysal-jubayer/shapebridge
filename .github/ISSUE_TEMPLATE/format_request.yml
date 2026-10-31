@@ -1,0 +1,49 @@
+name: 📦 Format request
+description: Ask for a CAD/3D file format that ShapeBridge can't open or export yet
+labels: ["format", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [docs/FORMATS.md](https://github.com/gazi-faysal-jubayer/shapebridge/blob/main/docs/FORMATS.md) first. Proprietary native formats (SolidWorks, Inventor, CATIA, NX, Creo…) can only be supported through bridges to your own installed copy of the tool. The page explains why.
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this format?
+      options:
+        - label: I searched the existing issues and FORMATS.md
+          required: true
+  - type: input
+    id: format
+    attributes:
+      label: Format name and extension
+      placeholder: e.g. Parasolid text (.x_t)
+    validations:
+      required: true
+  - type: input
+    id: producer
+    attributes:
+      label: Which application writes these files? Which version?
+      placeholder: e.g. Siemens NX 2306
+    validations:
+      required: true
+  - type: dropdown
+    id: direction
+    attributes:
+      label: What do you need?
+      multiple: true
+      options:
+        - View / import
+        - Export
+        - Keep parameters / feature tree
+    validations:
+      required: true
+  - type: textarea
+    id: spec
+    attributes:
+      label: Public specification or open-source reader
+      description: Links to a public spec, an open-source library (and its licence), or an official SDK.
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample file
+      description: Attach a small sample **you made yourself** and may share publicly (zip it if needed).

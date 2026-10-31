@@ -1,0 +1,10 @@
+{
+  "name": "shapebridge",
+  "version": "0.1.0",
+  "description": "Design parametric CAD parts as ShapeBridge documents and export them, with editable parameters, to FreeCAD, OpenSCAD, CadQuery and Fusion 360.",
+  "author": { "name": "ShapeBridge contributors" },
+  "homepage": "https://github.com/gazi-faysal-jubayer/shapebridge",
+  "repository": "https://github.com/gazi-faysal-jubayer/shapebridge",
+  "license": "Apache-2.0",
+  "keywords": ["cad", "parametric", "freecad", "openscad", "cadquery", "fusion360", "step"]
+}

@@ -1,0 +1,49 @@
+# Push a tag like v0.2.0 (or run by hand) to build installers for every OS into a DRAFT release.
+# A maintainer runs the manual checklist in docs/plans/testing-strategy.md, then publishes it.
+name: Publish release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Windows x64, os: windows-latest, args: "" }
+          - { name: macOS arm64, os: macos-latest, args: "--target aarch64-apple-darwin" }
+          - { name: macOS x64, os: macos-latest, args: "--target x86_64-apple-darwin" }
+          - { name: Linux x64, os: ubuntu-22.04, args: "" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ startsWith(matrix.os, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: swatinem/rust-cache@v2
+        with: { workspaces: "./src-tauri -> target" }
+      - name: Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
+          releaseName: ShapeBridge v__VERSION__
+          releaseBody: "See CHANGELOG.md for what changed. Installers are unsigned for now: docs/plans/release-distribution.md explains how to open them."
+          releaseDraft: true
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
+          args: ${{ matrix.args }}
