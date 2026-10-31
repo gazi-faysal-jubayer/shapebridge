@@ -6,6 +6,19 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Converter (File → Convert, Ctrl+E):
+  - exact STEP ⇄ BREP from STEP/BREP files or parametric parts
+  - STL from the exact solid at coarse, normal or fine quality
+  - unit conversion for mesh exports
+  - 2D drawing sheets (front, top and right views with hidden lines) as SVG (prints to PDF at 1:1) and DXF R12
+  - batch conversion of many files into one zip, with an error report
+- `shapebridge convert` CLI (`npm run build:cli`): the same exact conversions and drawings from the command line.
+- Offline readers: OCCT, rhino3dm, web-ifc and draco now ship with the app under `libs/` instead of loading from jsDelivr. The desktop app opens STEP, IGES, 3DM and IFC without internet, and jsDelivr is gone from the CSP.
+
+### Fixed
+
+- A reader that crashes inside its own code now fails the load with a message instead of leaving "Loading…" forever.
+
 - Live review:
   - names and colours for everyone; viewers follow the presenter's camera, selection, hidden parts, section, explode and display mode
   - hold **L** for a laser pointer that everyone sees

@@ -105,6 +105,7 @@ export const [state, setState] = createStore({
   hoverScene: null as [number, number, number] | null,
   views: [] as SavedView[],
   paletteOpen: false,
+  convertOpen: false,
 });
 
 export function persistSettings() {

@@ -2,18 +2,18 @@
 
 Status legend: ✅ works today · 🧪 experimental · 🗺️ planned (see the linked milestone) · 🌉 through a bridge to an installed host app · ❌ not possible with open-source tools today
 
-ShapeBridge reads files through the [Online 3D Viewer engine](https://github.com/kovacsv/Online3DViewer). That engine lazy-loads heavy readers from jsDelivr the first time they are needed: OCCT for STEP/IGES/BREP, rhino3dm, web-ifc and draco. Bundling them for offline desktop use is tracked in M1.
+ShapeBridge reads files through the [Online 3D Viewer engine](https://github.com/kovacsv/Online3DViewer). Its heavy readers (OCCT for STEP/IGES/BREP, rhino3dm, web-ifc, draco) ship with the app under `libs/` and load only when a file needs them, so everything works offline.
 
 ## Tier 1: neutral CAD (exact geometry)
 
 | Format | Extensions | Read | Write | Notes |
 |---|---|---|---|---|
-| STEP AP203/214/242 | `.step .stp` | ✅ | ✅ parametric parts · 🗺️ any B-rep (M2) | colours and assembly names kept on read |
-| IGES | `.iges .igs` | ✅ | 🗺️ M2 (needs IGES in our OCCT build) | |
-| OpenCascade BREP | `.brep .brp` | ✅ | 🗺️ M2 | |
+| STEP AP203/214/242 | `.step .stp` | ✅ | ✅ exact, from STEP/BREP files and parametric parts | colours and assembly names kept on read |
+| IGES | `.iges .igs` | ✅ | 🗺️ needs IGES in our OCCT build | |
+| OpenCascade BREP | `.brep .brp` | ✅ | ✅ exact | |
 | FreeCAD | `.FCStd` | ✅ | ✅ as `.FCMacro` (parametric) | the reader uses shapes embedded in the zip |
 | Rhino / openNURBS | `.3dm` | ✅ | ✅ (mesh) | via rhino3dm |
-| IFC (BIM) | `.ifc` | ✅ | 🗺️ M1b | Revit, ArchiCAD and Tekla exchange |
+| IFC (BIM) | `.ifc` | 🧪 reader bundled, sample not yet verified (#81) | 🗺️ M1b | Revit, ArchiCAD and Tekla exchange |
 | dotbim | `.bim` | ✅ | ✅ | |
 | VRML | `.wrl` | ✅ | 🗺️ M1b | |
 
@@ -39,9 +39,9 @@ ShapeBridge reads files through the [Online 3D Viewer engine](https://github.com
 
 | Format | Read | Write | Notes |
 |---|---|---|---|
-| SVG | ✅ (as 3D outline) | 🗺️ M2 (projected views) | |
-| DXF | 🗺️ M1b | 🗺️ M2 | `dxf-parser` / HLR projection |
-| PDF drawing | ❌ | 🗺️ M2 | |
+| SVG | ✅ (as 3D outline) | ✅ drawing sheet: front/top/right with hidden lines, 1:1 in mm | |
+| DXF | 🗺️ M1b | ✅ drawing sheet (R12 LINE entities, VISIBLE/HIDDEN layers) | verified by re-parsing with `dxf-parser` |
+| PDF drawing | ❌ | ✅ print the SVG sheet at 100 % | |
 | DWG (AutoCAD) | 🗺️ optional plugin | 🗺️ optional plugin | LibreDWG is GPL, so it ships as a separate opt-in download to keep the core Apache-2.0 |
 | DGN (MicroStation) | 🌉 ODA File Converter | 🌉 | free but closed-source; auto-detected if installed |
 

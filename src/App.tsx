@@ -14,6 +14,7 @@ import { StatusBar } from "./ui/StatusBar";
 import { Welcome } from "./ui/Welcome";
 import { CommandPalette } from "./ui/CommandPalette";
 import { ShareDialog } from "./ui/ShareDialog";
+import { ConvertDialog } from "./ui/ConvertDialog";
 import { ReviewOverlay } from "./ui/ReviewOverlay";
 import { ReviewPanel } from "./ui/ReviewPanel";
 import { joinShare, live } from "./live";
@@ -174,6 +175,7 @@ export default function App() {
       <StatusBar />
       <CommandPalette />
       <ShareDialog />
+      <ConvertDialog />
     </div>
   );
 }

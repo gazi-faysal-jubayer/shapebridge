@@ -45,6 +45,23 @@ Press **Ctrl+K** to search every command. Common shortcuts:
 - **View → Cycle theme** switches between system, light and dark.
 - Pick display units in the Properties panel. Files that don't state a unit are treated as millimetres.
 
+## Convert
+
+**File → Convert / export…** (Ctrl+E):
+
+- **Exact solid** (STEP, BREP): available when the open model is a STEP/BREP file or a parametric part. Size is kept exactly, in millimetres.
+- **Mesh** (STL, OBJ, glTF, PLY, OFF, 3DM, dotbim): pick the unit; meshes have none of their own, so the geometry is scaled. "STL from the exact solid" lets you choose coarse, normal or fine curves.
+- **2D drawing**: a sheet with front, top and right views and hidden lines, as SVG or DXF. Open the SVG in a browser and print at 100 % for a 1:1 PDF.
+- **Batch**: choose several files and one mesh format; you get a zip, with any failures listed in `errors.txt`.
+
+From the command line (after `npm install && npm run build:cli`):
+
+```bash
+node dist-cli/shapebridge.mjs convert part.step part.dxf
+node dist-cli/shapebridge.mjs convert part.step part.stl --quality fine --scale 0.03937
+node dist-cli/shapebridge.mjs convert bracket.sbridge.json bracket.step
+```
+
 ## Design a parametric part
 
 Open the **Design** tab, then pick a template (bracket, enclosure, flange, knob), or press Ctrl+K and type "template".

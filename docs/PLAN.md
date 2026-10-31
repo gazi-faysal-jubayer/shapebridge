@@ -83,14 +83,15 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 - DWG opt-in plugin (LibreDWG WASM, GPL, separate download) · L
 - ODA File Converter auto-detect bridge (DWG/DGN) · M
 
-### M2 Converter (v0.4)
-- B-rep → B-rep conversions STEP ⇄ IGES ⇄ BREP via a custom OCCT build that includes IGES · M
-- Tessellation quality slider (linear and angular deflection) · S
-- HLR projected views → DXF/SVG/PDF drawing export · L
-- Faceted STEP from meshes (clearly labelled lossy) · M
-- Batch convert dialog (folder in, format out) · M
-- CLI `npx shapebridge convert in.step out.glb` (Node, same code) · M
-- Unit handling (mm/in/m) and scale on export · S
+### M2 Converter (done in v0.2 except IGES output and faceted STEP)
+- [~] B-rep → B-rep: STEP ⇄ BREP done; IGES output needs a custom OCCT build with IGES · M
+- [x] Tessellation quality presets (coarse/normal/fine) · S
+- [x] HLR projected views → SVG (print to PDF) and DXF drawing sheets · L
+- [ ] Faceted STEP from meshes (clearly labelled lossy) · M
+- [x] Batch convert dialog (files in, zip out, error report) · M
+- [x] CLI `shapebridge convert` (Node, same code) · M
+- [x] Unit handling (mm/cm/m/in) and scale on mesh export · S
+- [x] Offline readers bundled under `libs/` (moved from M1) · M
 
 ### M2b Native bridges (v0.5)
 - Thumbnail extractor for OLE compound files (SolidWorks/Inventor/Solid Edge/CATIA previews) · M

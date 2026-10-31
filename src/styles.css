@@ -927,3 +927,11 @@ h3 {
 .right .tabs { height: auto; }
 .share-pill { position: fixed; right: 16px; bottom: 44px; z-index: 40; background: var(--accent); color: var(--accent-text); border-color: var(--accent); border-radius: 999px; font-weight: 600; box-shadow: var(--shadow); }
 .side.right { overflow-x: hidden; }
+
+/* ---------- dialogs ---------- */
+.dialog { position: fixed; top: 10vh; left: 50%; transform: translateX(-50%); width: min(520px, calc(100vw - 32px)); max-height: 80vh; overflow: auto; display: grid; gap: 10px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); z-index: 61; }
+.dialog-title { margin: 0; font-size: 16px; }
+.dialog .field { grid-template-columns: 80px 1fr; }
+.dialog h3 { margin: 8px 0 0; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row.end { justify-content: flex-end; }
