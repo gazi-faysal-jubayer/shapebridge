@@ -30,7 +30,7 @@ def build(r=15, h=18, grip=2, shaft_d=6):
         solids = []
         top = cq.Vector(0, 0, h * 0.6) + cq.Vector((0, 0, 1)) * 0.0001
         solids.append(cq.Solid.makeCylinder(shaft_d / 2, h * 0.6 + 0.0001, top, cq.Vector((0, 0, -1))))
-        return cq.Workplane().add(cq.Compound.makeCompound(solids))
+        return cq.Workplane().add(solids[0].fuse(*solids[1:]) if len(solids) > 1 else solids[0])
     result = result.cut(tool_shaft())
     return result
 

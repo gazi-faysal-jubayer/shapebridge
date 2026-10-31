@@ -31,7 +31,7 @@ def build(width=80, depth=40, thickness=8, boss_r=12, corner_r=4):
         solids = []
         top = cq.Vector(width / 2, depth / 2, thickness + boss_h) + cq.Vector((0, 0, 1)) * 0.0001
         solids.append(cq.Solid.makeCylinder(hole_d / 2, thickness + boss_h + 0.0001, top, cq.Vector((0, 0, -1))))
-        return cq.Workplane().add(cq.Compound.makeCompound(solids))
+        return cq.Workplane().add(solids[0].fuse(*solids[1:]) if len(solids) > 1 else solids[0])
     result = result.cut(tool_bore())
     # mount
     def tool_mount():
@@ -42,7 +42,7 @@ def build(width=80, depth=40, thickness=8, boss_r=12, corner_r=4):
         top = cq.Vector(width - thickness * 1.5, depth / 2, thickness) + cq.Vector((0, 0, 1)) * 0.0001
         solids.append(cq.Solid.makeCylinder(6.6 / 2, thickness + 0.0001, top, cq.Vector((0, 0, -1))))
         solids.append(cq.Solid.makeCylinder(11 / 2, 3 + 0.0001, top, cq.Vector((0, 0, -1))))
-        return cq.Workplane().add(cq.Compound.makeCompound(solids))
+        return cq.Workplane().add(solids[0].fuse(*solids[1:]) if len(solids) > 1 else solids[0])
     result = result.cut(tool_mount())
     return result
 

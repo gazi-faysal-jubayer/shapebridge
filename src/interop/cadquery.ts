@@ -65,7 +65,8 @@ export function cadquery(doc: Doc): string {
           `solids.append(cq.Solid.makeCone(${py(f.headDiameter!)} / 2, 0, ${py(f.headDiameter!)} / 2, top, cq.Vector(${tuple(n.map((x) => -x))})))`,
         );
     }
-    lines.push("return cq.Workplane().add(cq.Compound.makeCompound(solids))");
+    // overlapping solids in one compound don't boolean reliably, so fuse them into one tool
+    lines.push("return cq.Workplane().add(solids[0].fuse(*solids[1:]) if len(solids) > 1 else solids[0])");
     return lines;
   };
 

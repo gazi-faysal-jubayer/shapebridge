@@ -34,6 +34,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y openscad
       - name: Install FreeCAD
         if: matrix.tool == 'freecad'
-        run: sudo apt-get update && sudo apt-get install -y freecad
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Ubuntu 24.04 no longer packages FreeCAD; use the official AppImage, extracted (no FUSE on runners)
+        run: |
+          gh release download --repo FreeCAD/FreeCAD --pattern '*Linux-x86_64*.AppImage' --output freecad.AppImage
+          chmod +x freecad.AppImage && ./freecad.AppImage --appimage-extract >/dev/null
+          echo "$PWD/squashfs-root/usr/bin" >> "$GITHUB_PATH"
       - name: Compare volumes
+        shell: bash # implies pipefail, so a FAIL from check.py isn't hidden by tee
         run: python scripts/verify/check.py ${{ matrix.tool }} | tee -a "$GITHUB_STEP_SUMMARY"

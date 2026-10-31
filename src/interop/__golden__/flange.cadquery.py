@@ -27,14 +27,14 @@ def build(outer_d=120, bore_d=40, plate=12, hub_d=60, hub_h=20, bolt_circle=45, 
         solids = []
         top = cq.Vector(0, 0, plate + hub_h) + cq.Vector((0, 0, 1)) * 0.0001
         solids.append(cq.Solid.makeCylinder(bore_d / 2, plate + hub_h + 0.0001, top, cq.Vector((0, 0, -1))))
-        return cq.Workplane().add(cq.Compound.makeCompound(solids))
+        return cq.Workplane().add(solids[0].fuse(*solids[1:]) if len(solids) > 1 else solids[0])
     result = result.cut(tool_bore())
     # bolt
     def tool_bolt():
         solids = []
         top = cq.Vector(bolt_circle, 0, plate) + cq.Vector((0, 0, 1)) * 0.0001
         solids.append(cq.Solid.makeCylinder(9 / 2, plate + 0.0001, top, cq.Vector((0, 0, -1))))
-        return cq.Workplane().add(cq.Compound.makeCompound(solids))
+        return cq.Workplane().add(solids[0].fuse(*solids[1:]) if len(solids) > 1 else solids[0])
     result = result.cut(tool_bolt())
     # bolt_ring
     for i in range(1, int(bolts)):
