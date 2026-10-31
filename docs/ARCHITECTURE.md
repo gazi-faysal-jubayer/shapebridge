@@ -4,25 +4,33 @@
 
 ```
 src/
-  App.tsx              UI shell: toolbar, parameter panel, viewport, share dialog, guest mode
-  viewer/viewer.ts     wrapper over the Online 3D Viewer engine: load files, camera, mesh export
+  main.tsx, App.tsx    shell: top bar, side panels, stage, status bar; mounts the engine after first paint
+  state/store.ts       the single Solid store (settings, model, selection, tools, views)
+  controller.ts        every app operation (open, select, tools, export, designer, share); owns the engine
+  ui/actions.ts        action registry -> menus, command palette and keyboard shortcuts
+  ui/*.tsx             TopBar, ModelTree, Properties, ToolStrip, ViewCube, StatusBar, Welcome, CommandPalette, Designer, ShareDialog
+  viewer/engine.ts     lazy chunk: OV Viewer + ThreeModelLoader with our selection/measure/section/explode/display layers
+  viewer/math.ts       pure maths: explode offsets, section planes, standard views, view-cube faces, units
+  viewer/tree.ts       OV model -> part tree (pure, tested with a fake model)
   model/params.ts      expression parser/evaluator/printer (no eval), dependency ordering
   model/doc.ts         .sbridge.json document type, validation (trust boundary), sample part
-  kernel/build.ts      doc → OpenCascade solid (replicad)
+  kernel/build.ts      doc -> OpenCascade solid (replicad)
   kernel/occt.worker.ts  runs build.ts off the UI thread, returns STL (display) + STEP (exact)
   kernel/protocol.ts   promise API over the worker; creates it on first use
-  interop/*.ts         doc → FreeCAD / OpenSCAD / CadQuery / Fusion 360 / CSV
+  interop/*.ts         doc -> FreeCAD / OpenSCAD / CadQuery / Fusion 360 / CSV
   share/link.ts        share-link format (kept tiny so the P2P stack stays lazy)
   share/share.ts       Trystero rooms: host streams files + camera, guest receives
   platform/save.ts     native save dialog in Tauri, download link on the web
 src-tauri/             Rust shell: plugins (dialog, fs), bundle config, icons
-scripts/               icons, samples, GitHub setup
-samples/               small test models we generated ourselves
+scripts/               icons, samples, GitHub setup, agent hooks
+public/samples/        small test models we generated ourselves (served by the app)
 ```
+
+Decision record: [adr/0001-viewer-architecture.md](adr/0001-viewer-architecture.md).
 
 ## Data flow
 
-**Viewing:** `File[]` → `CadViewer.load` → OV `ThreeModelLoader` chooses an importer by extension. Importers for OCCT, rhino3dm and web-ifc are fetched lazily → three.js scene. OV converts Z-up formats to its Y-up scene. Our camera code assumes Y-up.
+**Viewing:** `File[]` → `controller.openFiles` → `Engine.load` → OV `ThreeModelLoader` chooses an importer by extension. Importers for OCCT, rhino3dm and web-ifc are fetched lazily → three.js scene. OV rotates some Z-up formats (STL, 3MF, FCStd) into its Y-up scene; STEP/IGES/BREP keep native Z-up and the engine switches the camera's up axis instead. Store changes (selection, hidden parts, section, explode, display mode) reach the engine through Solid effects in `controller.mountViewer`.
 
 **Parametric:** a parameter edit → `structuredClone(doc)` → debounce 300 ms → `resolve(doc)` validates on the main thread for instant errors → `kernel.build(doc)` in the worker → `{stl, step}` → the STL is shown through the same viewer path (so mesh export works for designs too); the STEP is kept for exact export.
 

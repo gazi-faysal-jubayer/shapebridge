@@ -67,4 +67,4 @@ How bridges work, and the legal limits on the clean-room research, are in [plans
 
 ## Adding a format
 
-Use the `add-format` agent skill (`.claude/skills/add-format/SKILL.md`), or follow it by hand. Every new format needs a sample in `samples/`, a smoke test, and a row in this file.
+Use the `add-format` agent skill (`.claude/skills/add-format/SKILL.md`), or follow it by hand. Every new format needs a sample in `public/samples/`, a smoke test, and a row in this file.
