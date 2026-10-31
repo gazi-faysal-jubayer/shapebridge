@@ -60,6 +60,21 @@ Open the **Design** tab, then pick a template (bracket, enclosure, flange, knob)
 - **Exact properties** (volume, area, size, centre of mass) come from the OpenCascade kernel.
 - **Export, parameters stay editable:** FreeCAD macro, OpenSCAD, CadQuery, Fusion 360 script, CSV parameter table, or an exact STEP solid. See [INTEROP.md](INTEROP.md) for what each tool keeps editable.
 
-## Live share
+## Live review
 
-**Share live** gives you a link that opens in any browser. The model is sent directly, peer-to-peer, and viewers follow your camera. **Stop sharing** ends the session.
+1. Open a model and click **Share live**. Send the link: it opens in any browser, and the model goes straight from your computer to theirs, peer-to-peer.
+2. Viewers follow your camera, selection, hidden parts, section, explode and display mode. They can untick **Follow presenter** to look around on their own.
+3. **Hold L** to show a laser pointer that everyone sees.
+4. **Comments:** press **C** (or **Pin comment** in the Review tab), click the model and type. **D** (or **Markup**) lets you draw on the view first. Click a comment to jump back to the view it was made in, then reply or ✓ resolve it. **Export review** saves everything as Markdown.
+5. **Host controls** in the share panel:
+   - your name
+   - who's in the review (× removes a viewer)
+   - whether viewers may export the model
+   - an end time
+   - a TURN relay for strict company networks
+   - **New link**, which revokes the old link
+   - **Stop sharing**
+
+The panel can be minimised with –.
+
+**Without a call:** Share → *Export offline viewer (HTML)* saves one file of about 1 MB plus the model that anyone can open offline: email it, or put it on a drive.

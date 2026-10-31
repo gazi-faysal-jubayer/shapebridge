@@ -3,7 +3,7 @@
 // selection, measure, section, explode and display modes are our layers on top of its scene.
 import * as OV from "online-3d-viewer";
 import * as THREE from "three";
-import type { Axis, DisplayMode, Measurement, Props, Section, StdView, TreeNode } from "../state/store";
+import type { Axis, DisplayMode, Measurement, Props, Section, StdView, Tool, TreeNode } from "../state/store";
 import { explodeOffset, sectionPlane, viewDirection, zUpExtensions } from "./math";
 import { buildTree, type OvModel } from "./tree";
 
@@ -34,7 +34,10 @@ export interface LoadResult {
 
 export interface EngineEvents {
   onPick(key: string | null, additive: boolean): void;
-  onHover(point: V3 | null): void;
+  /** model-space point for display, scene-space point for overlays */
+  onHover(point: V3 | null, scene: V3 | null): void;
+  /** a click on the model while the comment tool is active */
+  onPlace(scene: V3): void;
   onMeasure(m: Measurement | null, points: number): void;
   onCamera(): void;
 }
@@ -49,7 +52,7 @@ export class Engine {
   private model: OV.Model | null = null;
   private ids = new Map<string, OV.MeshInstanceId>();
   private upAxis: "y" | "z" = "y";
-  private tool: "select" | "measure" | "section" | "explode" = "select";
+  private tool: Tool = "select";
   private display: DisplayMode = "edges";
   private clip: THREE.Plane | null = null;
   private original = new WeakMap<THREE.Material, Partial<THREE.Material> & { wireframe?: boolean }>();
@@ -164,6 +167,10 @@ export class Engine {
   private click(button: number, coords: OV.Coord2D) {
     if (button !== 1) return;
     if (this.tool === "measure") return this.measureClick(coords);
+    if (this.tool === "comment") {
+      const h = this.hit(coords);
+      return void (h && this.events.onPlace(h.point.toArray() as V3));
+    }
     const ud = this.viewer.GetMeshUserDataUnderMouse(OV.IntersectionMode.MeshAndLine, coords) as UserData | null;
     this.events.onPick(ud ? keyOf(ud) : null, this.additive);
   }
@@ -173,7 +180,7 @@ export class Engine {
     if (now - this.lastHover < 40 || !this.model) return; // raycasts are not free on big models
     this.lastHover = now;
     const h = this.hit(coords);
-    this.events.onHover(h ? this.toModel(h.point) : null);
+    this.events.onHover(h ? this.toModel(h.point) : null, h ? (h.point.toArray() as V3) : null);
   }
 
   /** Scene point back to model coordinates (undo OV's Z-up → Y-up rotation for display). */
@@ -371,6 +378,13 @@ export class Engine {
       volume: manifold ? OV.CalculateVolume(target) : null,
       properties: props,
     };
+  }
+
+  /** Scene point → CSS pixels inside the viewport, or null when it's behind the camera. */
+  project(p: V3): [number, number] | null {
+    const v = new THREE.Vector3(...p).project(this.viewer.camera);
+    if (v.z > 1) return null;
+    return [((v.x + 1) / 2) * this.parent.clientWidth, ((1 - v.y) / 2) * this.parent.clientHeight];
   }
 
   screenshot(scale: number, transparent: boolean): string {

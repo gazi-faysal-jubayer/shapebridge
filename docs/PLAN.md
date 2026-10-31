@@ -110,14 +110,14 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 - [x] Trig functions (degrees) with per-target mapping; min/max/round/floor/ceil · S — [ ] typed parameter units (mm/deg)
 - [x] Mass properties: volume, area, size, centre of mass · S
 
-### M4 Share (v0.7)
-- Presenter controls: follow-me toggle (done), laser pointer, comment pins synced to peers · M
-- Guest-side permissions: view-only vs allow-download, set by the host · S
-- Host revokes a single viewer; session expiry · S
-- Optional TURN server setting for strict NATs · S
-- **Offline share:** export a self-contained viewer `.html` with the model embedded (email/Drive) · M
-- Transfer resume + progress UI for large files · M
-- Measurements visible to guests · S
+### M4 Share (done in v0.2)
+- [x] Presenter controls: follow-me (camera, selection, section, explode, display), laser pointer, comment pins and markups synced to peers · M
+- [x] Guest permissions: view-only vs allow-export, set by the host · S
+- [x] Host removes a viewer, issues a new link, session expiry · S
+- [x] Optional TURN server setting for strict NATs · S
+- [x] **Offline share:** self-contained viewer `.html` with the model embedded · M
+- [ ] Transfer resume after reconnect; per-viewer progress on the host · M
+- [x] Review export (Markdown) · S
 
 ### M5 Interop (v0.8)
 - Verify FreeCAD macro in FreeCAD 0.21 / 1.0 in CI (headless `freecadcmd`) · M

@@ -2,7 +2,7 @@
 import { createStore } from "solid-js/store";
 import { createEffect } from "solid-js";
 
-export type Tool = "select" | "measure" | "section" | "explode";
+export type Tool = "select" | "measure" | "section" | "explode" | "comment" | "markup";
 export type DisplayMode = "shaded" | "edges" | "wireframe" | "xray";
 export type Units = "mm" | "cm" | "m" | "in";
 export type Axis = "x" | "y" | "z";
@@ -57,9 +57,21 @@ interface Settings {
   projection: "perspective" | "orthographic";
   showLeft: boolean;
   showRight: boolean;
+  /** live review: your name, and an optional TURN relay for strict networks */
+  reviewName: string;
+  turn: { urls: string; username: string; credential: string };
 }
 
-const defaults: Settings = { theme: "system", units: "mm", display: "edges", projection: "perspective", showLeft: true, showRight: true };
+const defaults: Settings = {
+  theme: "system",
+  units: "mm",
+  display: "edges",
+  projection: "perspective",
+  showLeft: true,
+  showRight: true,
+  reviewName: "",
+  turn: { urls: "", username: "", credential: "" },
+};
 
 function loadSettings(): Settings {
   try {
@@ -90,6 +102,7 @@ export const [state, setState] = createStore({
   measurePoints: 0,
   props: null as Props | null,
   hover: null as [number, number, number] | null,
+  hoverScene: null as [number, number, number] | null,
   views: [] as SavedView[],
   paletteOpen: false,
 });

@@ -1,6 +1,7 @@
 // Every user action, once: menus, the command palette and keyboard shortcuts are all generated from this list.
 import { setState, state, type DisplayMode, type StdView } from "../state/store";
 import * as c from "../controller";
+import * as live from "../live";
 import { templates } from "../model/doc";
 
 export interface Action {
@@ -97,11 +98,15 @@ export const actions: Action[] = [
     label: "Exit tool / clear selection",
     group: "Inspect",
     keys: "Escape",
-    run: () => (state.tool !== "select" ? c.setTool(state.tool) : c.clearSelection()),
+    run: () => (live.live.draft ? live.cancelDraft() : state.tool !== "select" ? setState("tool", "select") : c.clearSelection()),
   },
 
-  { id: "share", label: "Share live…", group: "Share", run: c.startShare, enabled: () => hasModel() && !c.shareLink() },
-  { id: "stop-share", label: "Stop sharing", group: "Share", run: c.stopShare, enabled: () => !!c.shareLink() },
+  { id: "share", label: "Share live…", group: "Share", run: live.startShare, enabled: () => hasModel() && live.live.role === "none" },
+  { id: "stop-share", label: "Stop sharing", group: "Share", run: () => live.stopShare(), enabled: () => live.live.role !== "none" },
+  { id: "comment", label: "Pin a comment", group: "Share", keys: "C", run: () => setState("tool", "comment"), enabled: hasModel },
+  { id: "markup", label: "Draw a markup", group: "Share", keys: "D", run: live.startMarkup, enabled: hasModel },
+  { id: "export-review", label: "Export review (Markdown)", group: "Share", run: live.exportReview, enabled: () => live.live.comments.length > 0 },
+  { id: "offline-viewer", label: "Export offline viewer (HTML)", group: "Share", run: live.exportViewerHtml, enabled: hasModel },
 
   { id: "palette", label: "Command palette", group: "Help", keys: "Ctrl+K", run: () => setState("paletteOpen", true) },
   { id: "docs", label: "Documentation", group: "Help", run: () => open("https://github.com/gazi-faysal-jubayer/shapebridge#readme") },

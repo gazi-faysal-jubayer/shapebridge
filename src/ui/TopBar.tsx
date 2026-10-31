@@ -7,6 +7,7 @@ import Download from "lucide-solid/icons/download";
 import { actions, type Action } from "./actions";
 import { setState, state } from "../state/store";
 import * as c from "../controller";
+import { live, startShare } from "../live";
 
 const groups: Action["group"][] = ["File", "View", "Inspect", "Design", "Share", "Help"];
 
@@ -17,7 +18,23 @@ export function TopBar(props: { guest: boolean }) {
         <img src="logo.svg" alt="" width="24" height="24" />
         <span>ShapeBridge</span>
       </a>
-      <Show when={!props.guest} fallback={<span class="pill">Live view from presenter</span>}>
+      <Show when={!props.guest} fallback={
+          <>
+            <span class="pill">Live review</span>
+            <Show when={live.allowDownload}>
+              <DropdownMenu>
+                <DropdownMenu.Trigger class="icon-btn" disabled={!state.files.length} title="Export (allowed by the presenter)">
+                  <Download size={17} /> <span class="hide-sm">Export</span>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content class="menu">
+                    <ExportItems />
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu>
+            </Show>
+          </>
+        }>
         <nav class="menus" aria-label="Main menu">
           <For each={groups}>
             {(g) => (
@@ -73,7 +90,7 @@ export function TopBar(props: { guest: boolean }) {
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu>
-        <button class="primary icon-btn" disabled={!state.files.length || !!c.shareLink()} onClick={c.startShare}>
+        <button class="primary icon-btn" disabled={!state.files.length || live.role !== "none"} onClick={startShare}>
           <Share2 size={17} /> <span>Share live</span>
         </button>
       </Show>
