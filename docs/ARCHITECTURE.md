@@ -15,9 +15,15 @@ src/
   model/params.ts      expression parser/evaluator/printer (no eval), dependency ordering
   model/doc.ts         .sbridge.json document type, validation (trust boundary), sample part
   kernel/build.ts      doc -> OpenCascade solid (replicad)
-  kernel/occt.worker.ts  runs build.ts off the UI thread, returns STL (display) + STEP (exact)
+  kernel/occt.worker.ts  keeps the current exact solid (built or imported); build, import, export, projected views
   kernel/protocol.ts   promise API over the worker; creates it on first use
   interop/*.ts         doc -> FreeCAD / OpenSCAD / CadQuery / Fusion 360 / CSV
+  live.ts              live review: session lifecycle, presence, follow sync, pointers, comments
+  share/protocol.ts    typed review messages + strict validation (trust boundary)
+  share/offline.ts     self-contained viewer .html export
+  convert/convert.ts   File → Convert: exact (kernel), mesh (engine), drawings, batch
+  convert/drawing.ts   third-angle sheet layout, SVG and DXF writers, SVG path flattening
+  cli.ts               `shapebridge convert` (built by vite.cli.config.ts into dist-cli/)
   share/link.ts        share-link format (kept tiny so the P2P stack stays lazy)
   share/share.ts       Trystero rooms: host streams files + camera, guest receives
   platform/save.ts     native save dialog in Tauri, download link on the web

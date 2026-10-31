@@ -41,6 +41,11 @@ jobs:
             echo "### Tests: ${tests:-?} run, ${failures:-?} failed" >> "$GITHUB_STEP_SUMMARY"
           fi
       - run: npm run build
+      - name: CLI build and smoke test
+        run: |
+          npm run build:cli
+          node dist-cli/shapebridge.mjs convert public/samples/plate.step plate.dxf
+          node dist-cli/shapebridge.mjs convert public/samples/bracket.sbridge.json bracket.step
       - name: Bundle size
         run: |
           echo "### Bundle (gzip)" >> "$GITHUB_STEP_SUMMARY"

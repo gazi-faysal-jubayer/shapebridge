@@ -29,6 +29,7 @@ export const actions: Action[] = [
   { id: "restore-design", label: "Restore autosaved design", group: "Design", run: c.restoreAutosave, enabled: c.hasAutosave },
   { id: "sample-plate", label: "Open sample: plate (STEP)", group: "File", run: () => c.openSample("plate.step") },
   { id: "sample-assembly", label: "Open sample: assembly (STEP)", group: "File", run: () => c.openSample("assembly.step") },
+  { id: "convert", label: "Convert / export…", group: "File", keys: "Ctrl+E", run: () => setState("convertOpen", true) },
   { id: "screenshot", label: "Save screenshot (PNG)", group: "File", keys: "P", run: () => c.screenshot(2), enabled: hasModel },
   {
     id: "screenshot-transparent",

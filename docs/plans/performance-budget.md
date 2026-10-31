@@ -6,7 +6,8 @@
 | Initial JS (gzip) | < 300 KB (target < 60 KB) | 65 KB (v0.2; was 264 KB) | `npm run build` output |
 | 3D engine chunk (lazy, after first paint) | < 300 KB gz | 260 KB | build output `engine-*.js` |
 | P2P chunk (lazy) | < 40 KB gz | 27 KB | build output `share-*.js` |
-| OCCT kernel (lazy, designer only) | < 8 MB gz | 7.3 MB | build output `replicad_single-*.wasm` |
+| OCCT kernel (lazy, designer/converter only) | < 8 MB gz | 7.3 MB | build output `replicad_single-*.wasm` |
+| Offline readers (lazy, per format) | < 7 MB gz total | ~6.5 MB (OCCT importer 3.2, rhino3dm 1.0, web-ifc 0.9+, draco 0.1) | `dist/libs/` |
 | Cold start to empty viewport | < 1 s | not yet measured | Tauri `--verbose` timestamps |
 | Open a 1M-triangle STL | < 2 s | not yet measured | Playwright perf trace (M1) |
 | Parameter edit to new geometry (sample) | < 500 ms warm | not yet measured | `performance.now()` around `build()` |

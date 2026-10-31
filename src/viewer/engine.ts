@@ -98,7 +98,11 @@ export class Engine {
     this.reset();
     const settings = new OV.ImportSettings();
     settings.defaultColor = new OV.RGBColor(176, 190, 197);
-    return new Promise((resolve, reject) => {
+    let crashed: (e: PromiseRejectionEvent) => void = () => {};
+    const loading = new Promise<LoadResult>((resolve, reject) => {
+      // some readers crash inside their own promise chains and never call onLoadError; surface that as a failure
+      crashed = (e) => reject(new Error(`the reader crashed (${String(e.reason?.message ?? e.reason).slice(0, 120)})`));
+      window.addEventListener("unhandledrejection", crashed);
       this.loader.LoadModel(OV.InputFilesFromFileObjects(files), settings, {
         onLoadStart: () => {},
         onFileListProgress: () => {},
@@ -126,6 +130,7 @@ export class Engine {
           ),
       });
     });
+    return loading.finally(() => window.removeEventListener("unhandledrejection", crashed));
   }
 
   private register(nodeId: number, meshIndex: number) {
@@ -392,11 +397,13 @@ export class Engine {
     return this.viewer.GetImageAsDataUrl(Math.round(width * scale), Math.round(height * scale), transparent);
   }
 
-  export(ext: MeshExt): Promise<{ name: string; data: Uint8Array }[]> {
+  /** Mesh export of what's loaded; `scale` converts units (OBJ/STL/… carry no unit of their own). */
+  export(ext: MeshExt, scale = 1): Promise<{ name: string; data: Uint8Array }[]> {
     const spec = meshExports.find((m) => m.ext === ext)!;
     return new Promise((ok, fail) => {
       if (!this.model) return fail(new Error("Nothing to export"));
-      new OV.Exporter().Export(this.model, new OV.ExporterSettings({}), spec.format, ext, {
+      const transformation = new OV.Transformation(new OV.Matrix(null).CreateScale(scale, scale, scale));
+      new OV.Exporter().Export(this.model, new OV.ExporterSettings(scale === 1 ? {} : { transformation }), spec.format, ext, {
         onSuccess: (files: OV.ExportedFile[]) =>
           ok(
             files.map((f) => ({
