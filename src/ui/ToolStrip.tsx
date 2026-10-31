@@ -24,7 +24,8 @@ const displays: { id: DisplayMode; label: string }[] = [
   { id: "xray", label: "X-ray" },
 ];
 
-export function ToolStrip() {
+/** `panelOnly`: just the active tool's options (the ribbon and heads-up toolbar carry the buttons). */
+export function ToolStrip(props: { panelOnly?: boolean }) {
   const fmt = (v: number) => formatLength(v, state.modelUnit, state.settings.units);
   return (
     <div class="toolstrip-wrap">
@@ -95,7 +96,7 @@ export function ToolStrip() {
           </Show>
         </div>
       </Show>
-      <div class="toolstrip" role="toolbar" aria-label="Tools">
+      <div class="toolstrip" classList={{ "narrow-only": props.panelOnly }} role="toolbar" aria-label="Tools">
         <For each={tools}>
           {(t) => (
             <button

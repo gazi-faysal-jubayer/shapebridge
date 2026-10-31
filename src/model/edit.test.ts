@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { templates } from "./doc";
-import { addParam, deleteFeature, deleteParam, moveFeature, newFeature, renameParam, splitPair, toggleSuppressed, usedNames } from "./edit";
+import {
+  addParam,
+  deleteFeature,
+  deleteParam,
+  moveFeature,
+  newFeature,
+  renameFeature,
+  renameParam,
+  splitPair,
+  toggleSuppressed,
+  usedNames,
+} from "./edit";
 import { resolve } from "./doc";
 
 const bracket = templates[0];
@@ -50,5 +61,14 @@ describe("document edits", () => {
     expect(splitPair("max(a, b), 3")).toEqual(["max(a, b)", "3"]);
     expect(splitPair("10, w / 2")).toEqual(["10", "w / 2"]);
     expect(splitPair("10")).toBeNull();
+  });
+
+  it("renames features and keeps references", () => {
+    const flange = templates.find((t) => t.name === "flange")!;
+    const d = renameFeature(toggleSuppressed(flange, "bolt"), "bolt", "bolt_hole");
+    expect(d.features.find((f) => f.kind === "pattern")).toMatchObject({ target: "bolt_hole" });
+    expect(d.suppressed).toEqual(["bolt_hole"]);
+    expect(() => renameFeature(flange, "bolt", "disc")).toThrow(/exists/);
+    expect(() => renameFeature(flange, "bolt", "2x")).toThrow(/valid/);
   });
 });

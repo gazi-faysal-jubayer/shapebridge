@@ -8,14 +8,16 @@
 
 ## Find your way around
 
-| Area                       | What it does                                                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Left panel, **Model** tab  | the part tree. Click to select (Shift/Ctrl adds), double-click to fit, eye icon to hide. **Saved views** sit underneath.            |
-| Left panel, **Design** tab | the parametric designer (parameters, features, exports)                                                                             |
-| Right panel                | properties of the selection, or of the whole model: size, area, volume (closed meshes only), triangle count, file properties, units |
-| View cube (top right)      | click a face for that standard view; **ISO** for isometric                                                                          |
-| Tool strip (bottom)        | Select, Measure, Section, Explode, Fit, display mode, Screenshot                                                                    |
-| Status bar                 | messages, cursor coordinates, part and triangle counts, units, live-share status                                                    |
+| Area                               | What it does                                                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Ribbon (top)                       | commands grouped in tabs: Features, Sketch, Evaluate, Review, View, Convert. The arrow on the right hides the labels.    |
+| Left panel, **Model** tab          | the part tree. Click to select (Shift/Ctrl adds), double-click to fit, eye icon to hide. **Saved views** sit underneath. |
+| Left panel, **Features** tab       | the feature history of a parametric part (see below)                                                                     |
+| Task pane (right)                  | **Properties** of the selection, **Review** comments, and the **Design library** of templates and samples                |
+| Heads-up toolbar (top of the view) | zoom to fit, zoom to selection, previous view, section, view orientation, display style, show all, projection            |
+| View cube and triad                | click a cube face or a triad axis for that view; **ISO** for isometric                                                   |
+| Right-click in the view            | hide, isolate, measure or comment on the part under the cursor, or change the view when nothing is selected              |
+| Status bar                         | messages, what you are editing, cursor coordinates, part and triangle counts, units, live-share status                   |
 
 Mouse: left-drag orbits, right- or Shift-drag pans, the wheel or Ctrl-drag zooms.
 
@@ -64,14 +66,14 @@ node dist-cli/shapebridge.mjs convert bracket.sbridge.json bracket.step
 
 ## Design a parametric part
 
-Open the **Design** tab, then pick a template (bracket, enclosure, flange, knob), or press Ctrl+K and type "template".
+Pick a template from the **Features** tab or the **Design library**, or click any ribbon command (for example **Extrude**) to start a new part.
 
-- **Parameters:** every dimension is a named value or an expression, such as `thickness * 2` or `r * cos(30)`. Angles are in degrees. Rename a parameter and every use is updated. A parameter that is still used can't be deleted.
-- **Features:** **Add** extrude, cut, revolve, hole, fillet, chamfer, shell, pattern or mirror. Click a feature to edit it.
-  - The arrow buttons reorder it.
-  - The eye button suppresses it.
-  - ↺ rolls the model back to just after it.
-  - × deletes it.
+- **Parameters:** open **Equations** in the tree. Every dimension is a named value or an expression, such as `thickness * 2` or `r * cos(30)`. Angles are in degrees. Rename a parameter and every use is updated. A parameter that is still used can't be deleted.
+- **Features:** ribbon commands add extrude, cut, revolve, hole, fillet, chamfer, shell, pattern, mirror or a sketch profile. Each one opens the feature panel:
+  - ✓ (or Enter) keeps your changes; ✗ (or Esc) throws them away, including a feature you just added.
+  - Click a feature in the tree to edit it, double-click to rename it.
+  - Right-click it to edit, rename, suppress, roll back, move or delete it.
+  - Drag the blue **rollback bar** (or focus it and press ↑/↓) to see the part as it was before later features.
   - A feature that fails turns red, with the reason below the list.
 - **Undo/redo** with Ctrl+Z / Ctrl+Y. Your design is autosaved on this device ("Restore autosaved design"), and Ctrl+S saves a `.sbridge.json`.
 - **Exact properties** (volume, area, size, centre of mass) come from the OpenCascade kernel.
@@ -94,4 +96,4 @@ Open the **Design** tab, then pick a template (bracket, enclosure, flange, knob)
 
 The panel can be minimised with –.
 
-**Without a call:** Share → *Export offline viewer (HTML)* saves one file of about 1 MB plus the model that anyone can open offline: email it, or put it on a drive.
+**Without a call:** Share → _Export offline viewer (HTML)_ saves one file of about 1 MB plus the model that anyone can open offline: email it, or put it on a drive.

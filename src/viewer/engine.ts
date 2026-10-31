@@ -38,6 +38,8 @@ export interface EngineEvents {
   onHover(point: V3 | null, scene: V3 | null): void;
   /** a click on the model while the comment tool is active */
   onPlace(scene: V3): void;
+  /** right-click without dragging (right-drag pans): screen position and the part under the cursor */
+  onContext(x: number, y: number, key: string | null): void;
   onMeasure(m: Measurement | null, points: number): void;
   onCamera(): void;
 }
@@ -81,6 +83,10 @@ export class Engine {
 
     this.viewer.SetMouseClickHandler((button: number, coords: OV.Coord2D) => this.click(button, coords));
     this.viewer.SetMouseMoveHandler((coords: OV.Coord2D) => this.move(coords));
+    this.viewer.SetContextMenuHandler((global: OV.Coord2D, local: OV.Coord2D) => {
+      const ud = this.viewer.GetMeshUserDataUnderMouse(OV.IntersectionMode.MeshOnly, local) as UserData | null;
+      this.events.onContext(global.x, global.y, ud ? keyOf(ud) : null);
+    });
     // OV's click callback has no modifier keys, so remember them at pointer-down
     this.canvas.addEventListener("pointerdown", (e) => (this.additive = e.shiftKey || e.ctrlKey || e.metaKey), true);
   }

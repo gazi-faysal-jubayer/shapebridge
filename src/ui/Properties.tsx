@@ -1,6 +1,7 @@
 import { For, Show } from "solid-js";
 import { setState, state, type Units } from "../state/store";
 import { formatLength } from "../viewer/math";
+import * as c from "../controller";
 
 export function Properties() {
   const fmt = (v: number, power: 1 | 2 | 3 = 1) => formatLength(v, state.modelUnit, state.settings.units, power);
@@ -56,6 +57,25 @@ export function Properties() {
                 </For>
               </dl>
             </Show>
+          </>
+        )}
+      </Show>
+      <Show when={c.measures()}>
+        {(m) => (
+          <>
+            <h3>Exact part properties</h3>
+            <dl>
+              <dt>Volume</dt>
+              <dd>{fmt(m().volume, 3)}</dd>
+              <dt>Surface area</dt>
+              <dd>{fmt(m().area, 2)}</dd>
+              <dt>Centre of mass</dt>
+              <dd>
+                {m()
+                  .centerOfMass.map((v) => fmt(v))
+                  .join(", ")}
+              </dd>
+            </dl>
           </>
         )}
       </Show>

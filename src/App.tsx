@@ -7,7 +7,6 @@ import { handleShortcut } from "./ui/actions";
 import { TopBar } from "./ui/TopBar";
 import { ModelTree } from "./ui/ModelTree";
 import { Designer } from "./ui/Designer";
-import { Properties } from "./ui/Properties";
 import { ToolStrip } from "./ui/ToolStrip";
 import { ViewCube } from "./ui/ViewCube";
 import { StatusBar } from "./ui/StatusBar";
@@ -16,8 +15,10 @@ import { CommandPalette } from "./ui/CommandPalette";
 import { ShareDialog } from "./ui/ShareDialog";
 import { ConvertDialog } from "./ui/ConvertDialog";
 import { ReviewOverlay } from "./ui/ReviewOverlay";
-import { ReviewPanel } from "./ui/ReviewPanel";
-import { joinShare, live } from "./live";
+import { TaskPane } from "./ui/TaskPane";
+import { Ribbon } from "./ui/Ribbon";
+import { HeadsUp, Triad, ViewportMenu } from "./ui/Viewport";
+import { joinShare } from "./live";
 
 // the importers the 3D engine understands; keep docs/FORMATS.md in sync
 const accept = [
@@ -58,9 +59,6 @@ export default function App() {
   const guest = parseShareHash(location.hash);
   const [dragging, setDragging] = createSignal(false);
   const [tab, setTab] = createSignal("model");
-  const [rightTab, setRightTab] = createSignal("props");
-  // a review session or a new comment brings the Review tab forward
-  createEffect(() => (live.role !== "none" || live.draft) && setRightTab("review"));
   const [leftW, setLeftW] = createSignal(280);
   const [rightW, setRightW] = createSignal(300);
 
@@ -95,6 +93,9 @@ export default function App() {
       onDrop={onDrop}
     >
       <TopBar guest={!!guest} />
+      <Show when={!guest}>
+        <Ribbon />
+      </Show>
       <input
         id="file-input"
         type="file"
@@ -113,7 +114,7 @@ export default function App() {
                   Model
                 </Tabs.Trigger>
                 <Tabs.Trigger class="tab" value="design">
-                  Design
+                  Features
                 </Tabs.Trigger>
                 <Tabs.Indicator class="tab-indicator" />
               </Tabs.List>
@@ -135,8 +136,10 @@ export default function App() {
           </Show>
           <Show when={state.files.length}>
             <ReviewOverlay />
+            <HeadsUp />
             <ViewCube />
-            <ToolStrip />
+            <Triad />
+            <ToolStrip panelOnly={!guest} />
           </Show>
           <Show when={dragging()}>
             <div class="drop">Drop to open</div>
@@ -148,31 +151,14 @@ export default function App() {
           </Show>
         </section>
 
-        <Show when={state.settings.showRight && state.files.length}>
+        <Show when={state.settings.showRight && !guest}>
           <Splitter onDrag={(dx) => setRightW((w) => Math.min(Math.max(w - dx, 220), 520))} />
-          <aside class="side right" style={{ width: `${rightW()}px` }}>
-            <Tabs value={rightTab()} onChange={setRightTab} class="tabs">
-              <Tabs.List class="tab-list">
-                <Tabs.Trigger class="tab" value="props">
-                  Properties
-                </Tabs.Trigger>
-                <Tabs.Trigger class="tab" value="review">
-                  Review{live.comments.length ? ` (${live.comments.length})` : ""}
-                </Tabs.Trigger>
-                <Tabs.Indicator class="tab-indicator" />
-              </Tabs.List>
-              <Tabs.Content class="tab-body" value="props">
-                <Properties />
-              </Tabs.Content>
-              <Tabs.Content class="tab-body" value="review">
-                <ReviewPanel />
-              </Tabs.Content>
-            </Tabs>
-          </aside>
+          <TaskPane width={rightW()} />
         </Show>
       </main>
 
       <StatusBar />
+      <ViewportMenu />
       <CommandPalette />
       <ShareDialog />
       <ConvertDialog />
