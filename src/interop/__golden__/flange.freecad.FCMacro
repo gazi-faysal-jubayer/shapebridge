@@ -108,8 +108,7 @@ bore_0.setExpression("Height", "Params.plate + Params.hub_h + 0.0001")
 bore_0.setExpression("Placement.Base.x", "0")
 bore_0.setExpression("Placement.Base.y", "0")
 bore_0.setExpression("Placement.Base.z", "Params.plate + Params.hub_h - (Params.plate + Params.hub_h)")
-bore = doc.addObject("Part::MultiFuse", "bore")
-bore.Shapes = [bore_0]
+bore = bore_0
 cut_bore = doc.addObject("Part::Cut", "cut_bore")
 cut_bore.Base = fuse_hub
 cut_bore.Tool = bore
@@ -122,8 +121,7 @@ bolt_0.setExpression("Height", "Params.plate + 0.0001")
 bolt_0.setExpression("Placement.Base.x", "Params.bolt_circle")
 bolt_0.setExpression("Placement.Base.y", "0")
 bolt_0.setExpression("Placement.Base.z", "Params.plate - Params.plate")
-bolt = doc.addObject("Part::MultiFuse", "bolt")
-bolt.Shapes = [bolt_0]
+bolt = bolt_0
 cut_bolt = doc.addObject("Part::Cut", "cut_bolt")
 cut_bolt.Base = cut_bore
 cut_bolt.Tool = bolt

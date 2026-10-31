@@ -147,8 +147,7 @@ shaft_0.setExpression("Height", "Params.h * 0.6 + 0.0001")
 shaft_0.setExpression("Placement.Base.x", "0")
 shaft_0.setExpression("Placement.Base.y", "0")
 shaft_0.setExpression("Placement.Base.z", "Params.h * 0.6 - Params.h * 0.6")
-shaft = doc.addObject("Part::MultiFuse", "shaft")
-shaft.Shapes = [shaft_0]
+shaft = shaft_0
 cut_shaft = doc.addObject("Part::Cut", "cut_shaft")
 cut_shaft.Base = cut_flutes
 cut_shaft.Tool = shaft

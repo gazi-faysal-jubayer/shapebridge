@@ -163,7 +163,9 @@ export function freecad(doc: Doc): string {
             `(${f.headDiameter}) / 2`,
           );
       });
-      out.push(`${id} = doc.addObject("Part::MultiFuse", "${id}")`, `${id}.Shapes = [${parts.join(", ")}]`);
+      // MultiFuse refuses a single shape, so a lone cylinder is the tool itself
+      if (parts.length === 1) out.push(`${id} = ${parts[0]}`);
+      else out.push(`${id} = doc.addObject("Part::MultiFuse", "${id}")`, `${id}.Shapes = [${parts.join(", ")}]`);
     }
     return id;
   };

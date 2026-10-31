@@ -144,8 +144,7 @@ bore_0.setExpression("Height", "Params.thickness + Params.boss_h + 0.0001")
 bore_0.setExpression("Placement.Base.x", "Params.width / 2")
 bore_0.setExpression("Placement.Base.y", "Params.depth / 2")
 bore_0.setExpression("Placement.Base.z", "Params.thickness + Params.boss_h - (Params.thickness + Params.boss_h)")
-bore = doc.addObject("Part::MultiFuse", "bore")
-bore.Shapes = [bore_0]
+bore = bore_0
 cut_bore = doc.addObject("Part::Cut", "cut_bore")
 cut_bore.Base = fuse_boss
 cut_bore.Tool = bore
