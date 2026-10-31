@@ -37,6 +37,15 @@ describe("expression engine", () => {
     expect(evaluate(parse(printExpr(src, "plain")), env)).toBe(evaluate(parse(src), env));
   });
 
+  it("simplifies generator noise without changing values", () => {
+    expect(printExpr("(0) + (width)", "plain")).toBe("width");
+    expect(printExpr("1 * (x) + 0 * (y) + -1 * (z)", "plain")).toBe("x - z");
+    expect(printExpr("-(-(a))", "plain")).toBe("a");
+    expect(printExpr("(a) - (0)", "plain")).toBe("a");
+    const env = { x: 3, y: 4, z: 5 };
+    for (const e of ["1 * (x) + 0 * (y) + -1 * (z)", "(x) - -(y)", "-(0) + x / 1"]) expect(evaluate(parse(printExpr(e, "plain")), env)).toBe(evaluate(parse(e), env));
+  });
+
   it("flags literals", () => {
     expect(isLiteral("40")).toBe(true);
     expect(isLiteral("-2.5")).toBe(true);

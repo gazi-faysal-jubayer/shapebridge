@@ -1,0 +1,6 @@
+name,expression,value_mm,note
+length,"100",100,""
+width,"60",60,""
+height,"35",35,""
+wall,"2.5",2.5,""
+radius,"6",6,""

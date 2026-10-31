@@ -6,11 +6,13 @@ export type Ast =
   | { t: "ref"; name: string }
   | { t: "neg"; a: Ast }
   | { t: "bin"; op: "+" | "-" | "*" | "/" | "^"; a: Ast; b: Ast }
-  | { t: "call"; fn: Fn; a: Ast };
+  | { t: "call"; fn: Fn; args: Ast[] };
 
-// shortcut: only functions every target (FreeCAD, OpenSCAD, Python, Fusion 360) spells the same way; add trig once degree/radian mapping exists.
-const FNS = ["sqrt", "abs"] as const;
-type Fn = (typeof FNS)[number];
+// Angles are degrees everywhere (like FreeCAD and OpenSCAD); the Python printer converts.
+const ARITY = { sqrt: 1, abs: 1, sin: 1, cos: 1, tan: 1, asin: 1, acos: 1, atan: 1, atan2: 2, min: 2, max: 2, round: 1, floor: 1, ceil: 1 } as const;
+type Fn = keyof typeof ARITY;
+const FNS = Object.keys(ARITY) as Fn[];
+const RAD = Math.PI / 180;
 
 export type Dialect = "plain" | "freecad" | "openscad" | "python" | "fusion";
 
@@ -32,7 +34,7 @@ export function isValidName(name: string): boolean {
 }
 
 export function parse(src: string): Ast {
-  const toks = src.match(/\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+|[A-Za-z_]\w*|[-+*/^()]|\S/g) ?? [];
+  const toks = src.match(/\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+|[A-Za-z_]\w*|[-+*/^(),]|\S/g) ?? [];
   let i = 0;
   const peek = () => toks[i];
   const next = () => toks[i++];
@@ -77,11 +79,14 @@ export function parse(src: string): Ast {
     }
     if (/^[\d.]/.test(tok)) return { t: "num", v: Number(tok) };
     if (NAME.test(tok)) {
-      if ((FNS as readonly string[]).includes(tok)) {
+      if ((FNS as string[]).includes(tok)) {
+        const fn = tok as Fn;
         expect("(");
-        const a = sum();
+        const args = [sum()];
+        while (peek() === ",") (next(), args.push(sum()));
         expect(")");
-        return { t: "call", fn: tok as Fn, a };
+        if (args.length !== ARITY[fn]) throw new Error(`${fn}() takes ${ARITY[fn]} argument(s)`);
+        return { t: "call", fn, args };
       }
       if (RESERVED.has(tok)) throw new Error(`"${tok}" is reserved`);
       return { t: "ref", name: tok };
@@ -96,7 +101,8 @@ export function parse(src: string): Ast {
 
 export function refs(ast: Ast, out = new Set<string>()): Set<string> {
   if (ast.t === "ref") out.add(ast.name);
-  else if (ast.t === "neg" || ast.t === "call") refs(ast.a, out);
+  else if (ast.t === "neg") refs(ast.a, out);
+  else if (ast.t === "call") ast.args.forEach((a) => refs(a, out));
   else if (ast.t === "bin") {
     refs(ast.a, out);
     refs(ast.b, out);
@@ -113,8 +119,21 @@ export function evaluate(ast: Ast, env: Record<string, number>): number {
       return env[ast.name];
     case "neg":
       return -evaluate(ast.a, env);
-    case "call":
-      return Math[ast.fn](evaluate(ast.a, env));
+    case "call": {
+      const [a, b] = ast.args.map((x) => evaluate(x, env));
+      switch (ast.fn) {
+        case "sin": return Math.sin(a * RAD);
+        case "cos": return Math.cos(a * RAD);
+        case "tan": return Math.tan(a * RAD);
+        case "asin": return Math.asin(a) / RAD;
+        case "acos": return Math.acos(a) / RAD;
+        case "atan": return Math.atan(a) / RAD;
+        case "atan2": return Math.atan2(a, b) / RAD;
+        case "min": return Math.min(a, b);
+        case "max": return Math.max(a, b);
+        default: return Math[ast.fn](a);
+      }
+    }
     case "bin": {
       const a = evaluate(ast.a, env);
       const b = evaluate(ast.b, env);
@@ -186,7 +205,7 @@ export function print(ast: Ast, d: Dialect = "plain"): string {
     case "neg":
       return `-${wrap(ast.a, PREC.neg + 1)}`;
     case "call":
-      return `${ast.fn}(${print(ast.a, d)})`;
+      return printCall(ast.fn, ast.args.map((a) => print(a, d)), d);
     case "bin": {
       const p = PREC[ast.op];
       if (ast.op === "^") {
@@ -200,4 +219,50 @@ export function print(ast: Ast, d: Dialect = "plain"): string {
   }
 }
 
-export const printExpr = (expr: string, d: Dialect) => print(parse(expr), d);
+function printCall(fn: Fn, args: string[], d: Dialect): string {
+  if (d !== "python") return `${fn}(${args.join(", ")})`;
+  // Python's math module works in radians and has no degree-mode trig
+  const [a, b] = args;
+  if (fn === "sin" || fn === "cos" || fn === "tan") return `math.${fn}(math.radians(${a}))`;
+  if (fn === "asin" || fn === "acos" || fn === "atan") return `math.degrees(math.${fn}(${a}))`;
+  if (fn === "atan2") return `math.degrees(math.atan2(${a}, ${b}))`;
+  if (fn === "sqrt" || fn === "floor" || fn === "ceil") return `math.${fn}(${a})`;
+  return `${fn}(${args.join(", ")})`;
+}
+
+/** Folds the identities generators produce (0 + x, 1 * x, 0 * x, -(0)) so exported code reads naturally. */
+export function simplify(ast: Ast): Ast {
+  const isNum = (a: Ast, v: number) => a.t === "num" && a.v === v;
+  if (ast.t === "neg") {
+    const a = simplify(ast.a);
+    if (a.t === "num") return { t: "num", v: -a.v };
+    return a.t === "neg" ? a.a : { t: "neg", a };
+  }
+  if (ast.t === "call") return { ...ast, args: ast.args.map(simplify) };
+  if (ast.t !== "bin") return ast;
+  const a = simplify(ast.a);
+  const b = simplify(ast.b);
+  if (ast.op === "+") {
+    if (isNum(a, 0)) return b;
+    if (isNum(b, 0)) return a;
+    if (b.t === "neg") return { t: "bin", op: "-", a, b: b.a };
+  }
+  if (ast.op === "-") {
+    if (isNum(b, 0)) return a;
+    if (isNum(a, 0)) return simplify({ t: "neg", a: b });
+  }
+  if (ast.op === "*") {
+    if (isNum(a, 0) || isNum(b, 0)) return { t: "num", v: 0 };
+    if (isNum(a, 1)) return b;
+    if (isNum(b, 1)) return a;
+    if (isNum(a, -1)) return simplify({ t: "neg", a: b });
+    if (isNum(b, -1)) return simplify({ t: "neg", a });
+  }
+  if (ast.op === "/" && isNum(b, 1)) return a;
+  return { ...ast, a, b };
+}
+
+export const printExpr = (expr: string, d: Dialect) => print(simplify(parse(expr)), d);
+
+/** Builds an expression string from parts, e.g. sum("x", "w") -> "(x) + (w)"; printing normalises the brackets. */
+export const sumExpr = (...parts: string[]) => parts.map((p) => `(${p})`).join(" + ");

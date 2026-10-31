@@ -853,3 +853,34 @@ h3 {
     display: none;
   }
 }
+
+/* ---------- parametric designer ---------- */
+.designer-bar { display: flex; align-items: center; gap: 4px; padding: 8px 0 0; }
+.designer .params td { padding: 1px 2px; }
+.designer .params input { width: 100%; padding: 3px 6px; }
+.designer .params input.name { font-weight: 500; }
+.designer .add { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); }
+.row-head { display: flex; align-items: center; justify-content: space-between; }
+.row-head h3 { margin-bottom: 6px; }
+.designer .features { list-style: none; padding: 0; margin: 0; }
+.designer .features li { border: 1px solid transparent; border-radius: 6px; margin-bottom: 2px; }
+.designer .features li > .label { display: inline-flex; gap: 6px; align-items: center; background: none; border: 0; padding: 4px 6px; text-align: left; }
+.designer .features li .kind { font-weight: 500; }
+.designer .features li .actions { float: right; display: inline-flex; opacity: 0; }
+.designer .features li:hover .actions, .designer .features li.selected .actions { opacity: 1; }
+.designer .features li.selected { border-color: var(--border); background: var(--surface-2); }
+.designer .features li.off > .label { opacity: 0.45; text-decoration: line-through; }
+.designer .features li.failed { border-color: var(--error); }
+.feature-form { display: grid; gap: 6px; padding: 6px 8px 10px; clear: both; }
+.field { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; }
+.field span { color: var(--muted); }
+.field input, .field select, .field textarea { width: 100%; padding: 4px 6px; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+.field textarea { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; resize: vertical; }
+.field.check { display: flex; }
+.templates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.templates button { display: grid; gap: 3px; text-align: left; padding: 10px; border-radius: 8px; }
+.templates button b { text-transform: capitalize; }
+.templates button span { font-size: 11px; color: var(--muted); }
+.measures { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+.measures dt { color: var(--muted); }
+.measures dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }

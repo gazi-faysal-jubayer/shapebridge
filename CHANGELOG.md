@@ -6,6 +6,15 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Parametric designer v2 (`shapebridge/2` documents, v1 files migrate automatically):
+  - sketches on XY/XZ/YZ with offsets (rectangle, circle, regular polygon, polyline)
+  - extrude and cut (with symmetric), revolve, holes (simple, counterbore, countersink)
+  - fillet and chamfer by edge rule, shell, linear and polar patterns, mirror
+- Feature tree with per-feature forms, reorder, suppress, roll back and delete. Parameter add, rename (rewrites every use) and delete. Undo/redo, autosave and restore, Ctrl+S to save.
+- Templates: bracket, enclosure, flange, knob. Exact volume, area, size and centre of mass from the kernel.
+- Degree-based trig, min/max/round/floor/ceil in expressions.
+- Every feature exports to FreeCAD (Sketcher + spreadsheet), OpenSCAD, CadQuery and Fusion 360. A new **Interop verify** CI runs the outputs in CadQuery, OpenSCAD and FreeCAD and compares volumes with the kernel.
+
 - Pro viewer layout: menu bar, model tree with hide/isolate, properties panel (size, area, volume, file properties, units), view cube, floating tool strip, status bar with cursor coordinates, welcome screen with samples.
 - Measure (distance, angle between faces, parallel-face distance), section plane (X/Y/Z, offset, flip), exploded view, display modes (shaded, edges, wireframe, x-ray), perspective/orthographic, Y/Z up axis, standard views, saved views, PNG screenshots.
 - Command palette (Ctrl+K) and keyboard shortcuts generated from one action registry.

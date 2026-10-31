@@ -1,0 +1,8 @@
+name,expression,value_mm,note
+outer_d,"120",120,""
+bore_d,"40",40,""
+plate,"12",12,""
+hub_d,"60",60,""
+hub_h,"20",20,""
+bolt_circle,"45",45,""
+bolts,"6",6,""

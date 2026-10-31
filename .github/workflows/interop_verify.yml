@@ -1,0 +1,46 @@
+# Runs the golden parametric exports in the real tools and checks their volumes match ShapeBridge's kernel.
+# Not a required check: tool installs are slow and occasionally flaky.
+name: Interop verify
+
+on:
+  push:
+    branches: [main]
+    paths: ["src/interop/**", "src/model/**", "src/kernel/**", "scripts/verify/**", ".github/workflows/interop_verify.yml"]
+  pull_request:
+    paths: ["src/interop/**", "src/model/**", "src/kernel/**", "scripts/verify/**", ".github/workflows/interop_verify.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: ${{ matrix.tool }}
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [cadquery, openscad, freecad]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: { python-version: "3.12" }
+      - name: Install CadQuery
+        if: matrix.tool == 'cadquery'
+        run: pip install cadquery
+      - name: Install OpenSCAD
+        if: matrix.tool == 'openscad'
+        run: sudo apt-get update && sudo apt-get install -y openscad
+      - name: Install FreeCAD
+        if: matrix.tool == 'freecad'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Ubuntu 24.04 no longer packages FreeCAD; use the official AppImage, extracted (no FUSE on runners)
+        run: |
+          gh release download --repo FreeCAD/FreeCAD --pattern '*Linux-x86_64*.AppImage' --output freecad.AppImage
+          chmod +x freecad.AppImage && ./freecad.AppImage --appimage-extract >/dev/null
+          echo "$PWD/squashfs-root/usr/bin" >> "$GITHUB_PATH"
+      - name: Compare volumes
+        shell: bash # implies pipefail, so a FAIL from check.py isn't hidden by tee
+        run: python scripts/verify/check.py ${{ matrix.tool }} | tee -a "$GITHUB_STEP_SUMMARY"
