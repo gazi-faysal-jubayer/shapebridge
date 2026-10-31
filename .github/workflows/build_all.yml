@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      - name: Dependency audit (runtime, high and critical)
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run typecheck
       - name: Unit, golden and kernel tests
         run: npx vitest run --reporter=default --reporter=junit --outputFile.junit=test-results.xml
@@ -67,10 +69,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: Windows x64, os: windows-latest, args: "", artifact: ShapeBridge-Windows-x64 }
-          - { name: macOS arm64, os: macos-latest, args: "--target aarch64-apple-darwin", artifact: ShapeBridge-macOS-arm64 }
-          - { name: macOS x64, os: macos-latest, args: "--target x86_64-apple-darwin", artifact: ShapeBridge-macOS-x64 }
-          - { name: Linux x64, os: ubuntu-22.04, args: "", artifact: ShapeBridge-Linux-x64 }
+          - { name: Windows x64, os: windows-latest, args: "", artifact: ShapeBridge-Windows-x64, bin: target/release/shapebridge.exe }
+          - name: macOS arm64
+            os: macos-latest
+            args: "--target aarch64-apple-darwin"
+            artifact: ShapeBridge-macOS-arm64
+            bin: target/aarch64-apple-darwin/release/shapebridge
+          - name: macOS x64
+            os: macos-latest
+            args: "--target x86_64-apple-darwin"
+            artifact: ShapeBridge-macOS-x64
+            bin: target/x86_64-apple-darwin/release/shapebridge
+          - { name: Linux x64, os: ubuntu-22.04, args: "", artifact: ShapeBridge-Linux-x64, bin: target/release/shapebridge }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -88,10 +98,24 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb imagemagick
       - run: npm ci
       - name: Build installers
         run: npx tauri build --ci ${{ matrix.args }}
+      # launch the built app and check it stays up; the screenshot is uploaded with the installers
+      - name: Rosetta for the Intel build
+        if: matrix.artifact == 'ShapeBridge-macOS-x64'
+        run: softwareupdate --install-rosetta --agree-to-license || true
+      - name: Launch smoke test
+        shell: bash
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a -s "-screen 0 1280x800x24" node scripts/smoke-launch.mjs "src-tauri/${{ matrix.bin }}" launch.png
+          else
+            node scripts/smoke-launch.mjs "src-tauri/${{ matrix.bin }}" launch.png
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
@@ -104,6 +128,29 @@ jobs:
             src-tauri/target/**/release/bundle/appimage/*.AppImage
             src-tauri/target/**/release/bundle/deb/*.deb
             src-tauri/target/**/release/bundle/rpm/*.rpm
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: launch-${{ matrix.artifact }}
+          path: launch.png
+          if-no-files-found: ignore
+          retention-days: 14
+
+  rust-audit:
+    name: Rust dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with: { tool: cargo-audit }
+      # no Cargo.lock is committed yet, so audit the versions a fresh build would resolve today
+      - name: cargo audit
+        working-directory: src-tauri
+        run: |
+          [ -f Cargo.lock ] || cargo generate-lockfile
+          cargo audit
 
   nightly:
     name: Publish nightly-builds
