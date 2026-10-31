@@ -2,7 +2,9 @@
 import { setState, state, type DisplayMode, type StdView } from "../state/store";
 import * as c from "../controller";
 import * as live from "../live";
-import { templates } from "../model/doc";
+import { templates, type Feature } from "../model/doc";
+import type { IconName } from "./icons";
+import { targets } from "../interop";
 
 export interface Action {
   id: string;
@@ -12,20 +14,103 @@ export interface Action {
   keys?: string;
   run: () => unknown;
   enabled?: () => boolean;
+  icon?: IconName;
+  /** short label for ribbon buttons */
+  short?: string;
 }
 
 const hasModel = () => state.files.length > 0;
 const hasSelection = () => state.selection.length > 0;
 const display = (d: DisplayMode) => () => setState("settings", "display", d);
 const view = (v: StdView) => () => c.setView(v);
+const hasSolid = () => (c.doc()?.features.length ?? 0) > 0;
+const hasTool = () => !!c.doc()?.features.some((f) => f.kind === "extrude" || f.kind === "revolve" || f.kind === "hole");
+const feature = (id: string, label: string, short: string, icon: IconName, run: () => unknown, enabled?: () => boolean): Action => ({
+  id,
+  label,
+  short,
+  icon,
+  group: "Design",
+  run,
+  enabled,
+});
+const withProfile = (profile: Extract<Feature, { kind: "extrude" }>["profile"]) => (f: Feature) => ({ ...f, profile }) as Feature;
 
 export const actions: Action[] = [
   { id: "open", label: "Open file…", group: "File", keys: "Ctrl+O", run: () => document.getElementById("file-input")?.click() },
   { id: "new-part", label: "New parametric part", group: "Design", keys: "Ctrl+Shift+N", run: () => c.loadDoc() },
-  ...templates.map((t): Action => ({ id: `template-${t.name}`, label: `New part from template: ${t.name}`, group: "Design", run: () => c.loadDoc(t) })),
+  ...templates.map((t): Action => ({
+    id: `template-${t.name}`,
+    label: `New part from template: ${t.name}`,
+    group: "Design",
+    run: () => c.loadDoc(t),
+  })),
+  feature("feat-extrude", "Extruded boss", "Extrude", "extrude", () => c.addFeature("extrude")),
+  feature("feat-cut", "Extruded cut", "Cut", "cut", () => c.addFeature("cut"), hasSolid),
+  feature("feat-revolve", "Revolve", "Revolve", "revolve", () => c.addFeature("revolve")),
+  feature("feat-hole", "Hole", "Hole", "hole", () => c.addFeature("hole"), hasSolid),
+  feature("feat-fillet", "Fillet", "Fillet", "fillet", () => c.addFeature("fillet"), hasSolid),
+  feature("feat-chamfer", "Chamfer", "Chamfer", "chamfer", () => c.addFeature("chamfer"), hasSolid),
+  feature("feat-shell", "Shell", "Shell", "shell", () => c.addFeature("shell"), hasSolid),
+  feature("feat-linear", "Linear pattern", "Linear", "linearPattern", () => c.addFeature("pattern"), hasTool),
+  feature(
+    "feat-polar",
+    "Circular pattern",
+    "Circular",
+    "polarPattern",
+    () =>
+      c.addFeature("pattern", (f) => ({
+        id: f.id,
+        kind: "pattern",
+        target: (f as { target: string }).target,
+        mode: "polar",
+        cx: "0",
+        cy: "0",
+        count: "6",
+      })),
+    hasTool,
+  ),
+  feature("feat-mirror", "Mirror", "Mirror", "mirror", () => c.addFeature("mirror"), hasSolid),
+  feature("sketch-rect", "Sketch: rectangle extrude", "Rectangle", "sketchRect", () => c.addFeature("extrude")),
+  feature("sketch-circle", "Sketch: circle extrude", "Circle", "sketchCircle", () =>
+    c.addFeature("extrude", withProfile({ type: "circle", cx: "0", cy: "0", r: "10" })),
+  ),
+  feature("sketch-polygon", "Sketch: polygon extrude", "Polygon", "sketchPolygon", () =>
+    c.addFeature("extrude", withProfile({ type: "polygon", cx: "0", cy: "0", r: "10", sides: 6 })),
+  ),
+  feature("sketch-polyline", "Sketch: polyline extrude", "Polyline", "sketchPolyline", () =>
+    c.addFeature(
+      "extrude",
+      withProfile({
+        type: "polyline",
+        points: [
+          ["0", "0"],
+          ["30", "0"],
+          ["30", "10"],
+          ["10", "25"],
+          ["0", "25"],
+        ],
+      }),
+    ),
+  ),
+  feature(
+    "equations",
+    "Equations (parameters)",
+    "Equations",
+    "equations",
+    () => c.beginEdit("equations"),
+    () => !!c.doc(),
+  ),
   { id: "undo", label: "Undo", group: "Design", keys: "Ctrl+Z", run: c.undo, enabled: c.canUndo },
   { id: "redo", label: "Redo", group: "Design", keys: "Ctrl+Y", run: c.redo, enabled: c.canRedo },
-  { id: "save-design", label: "Save design (.sbridge.json)", group: "Design", keys: "Ctrl+S", run: () => c.exportInterop("json"), enabled: () => !!c.doc() },
+  {
+    id: "save-design",
+    label: "Save design (.sbridge.json)",
+    group: "Design",
+    keys: "Ctrl+S",
+    run: () => c.exportInterop("json"),
+    enabled: () => !!c.doc(),
+  },
   { id: "restore-design", label: "Restore autosaved design", group: "Design", run: c.restoreAutosave, enabled: c.hasAutosave },
   { id: "sample-plate", label: "Open sample: plate (STEP)", group: "File", run: () => c.openSample("plate.step") },
   { id: "sample-assembly", label: "Open sample: assembly (STEP)", group: "File", run: () => c.openSample("assembly.step") },
@@ -106,7 +191,13 @@ export const actions: Action[] = [
   { id: "stop-share", label: "Stop sharing", group: "Share", run: () => live.stopShare(), enabled: () => live.live.role !== "none" },
   { id: "comment", label: "Pin a comment", group: "Share", keys: "C", run: () => setState("tool", "comment"), enabled: hasModel },
   { id: "markup", label: "Draw a markup", group: "Share", keys: "D", run: live.startMarkup, enabled: hasModel },
-  { id: "export-review", label: "Export review (Markdown)", group: "Share", run: live.exportReview, enabled: () => live.live.comments.length > 0 },
+  {
+    id: "export-review",
+    label: "Export review (Markdown)",
+    group: "Share",
+    run: live.exportReview,
+    enabled: () => live.live.comments.length > 0,
+  },
   { id: "offline-viewer", label: "Export offline viewer (HTML)", group: "Share", run: live.exportViewerHtml, enabled: hasModel },
 
   { id: "palette", label: "Command palette", group: "Help", keys: "Ctrl+K", run: () => setState("paletteOpen", true) },
@@ -118,6 +209,53 @@ export const actions: Action[] = [
     run: () => open("https://github.com/gazi-faysal-jubayer/shapebridge/issues/new?template=bug_report.yml"),
   },
 ];
+
+// parametric exports (FreeCAD, OpenSCAD, CadQuery, Fusion 360, CSV, exact STEP, .sbridge.json)
+actions.push(
+  ...[...targets.map((t) => ({ id: t.id, label: t.label })), { id: "step", label: "STEP (exact solid)" }].map((t): Action => ({
+    id: `export-${t.id}`,
+    label: `Export: ${t.label}`,
+    short: t.label.split(" ")[0],
+    group: "Design",
+    icon: "exportParam",
+    run: () => c.exportInterop(t.id),
+    enabled: () => !!c.doc(),
+  })),
+);
+
+// icons for actions defined above without one
+const ICONS: Record<string, IconName> = {
+  open: "open",
+  "new-part": "newPart",
+  undo: "undo",
+  redo: "redo",
+  "save-design": "save",
+  convert: "convert",
+  screenshot: "screenshot",
+  fit: "zoomFit",
+  "view-front": "viewFront",
+  "view-top": "viewTop",
+  "view-right": "viewRight",
+  "view-iso": "viewIso",
+  "display-shaded": "displayShaded",
+  "display-edges": "displayEdges",
+  "display-wireframe": "wireframe",
+  "display-xray": "xray",
+  "tool-measure": "measure",
+  "tool-section": "section",
+  "tool-explode": "explode",
+  hide: "hide",
+  isolate: "isolate",
+  "show-all": "showAll",
+  share: "share",
+  comment: "comment",
+  markup: "markup",
+  "export-review": "drawing",
+  "offline-viewer": "exportParam",
+};
+for (const a of actions) a.icon ??= ICONS[a.id];
+
+export const byId = (id: string) => actions.find((a) => a.id === id)!;
 
 /** Normalises a keyboard event to the `keys` notation above. */
 export function eventKeys(e: KeyboardEvent): string {

@@ -6,6 +6,11 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- CAD-style workspace:
+  - a ribbon command bar (Features, Sketch, Evaluate, Review, View, Convert) with an original icon set
+  - a feature history tree with origin planes, Equations, right-click commands, rename and a draggable rollback bar
+  - a feature panel with OK / Cancel (Cancel undoes everything since it opened)
+  - a heads-up view toolbar, an XYZ triad, a right-click menu in the viewport, and a task pane (Properties, Review, Design library)
 - Converter (File → Convert, Ctrl+E):
   - exact STEP ⇄ BREP from STEP/BREP files or parametric parts
   - STL from the exact solid at coarse, normal or fine quality

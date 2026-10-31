@@ -59,6 +59,7 @@ interface Settings {
   showRight: boolean;
   /** live review: your name, and an optional TURN relay for strict networks */
   reviewName: string;
+  ribbonCompact: boolean;
   turn: { urls: string; username: string; credential: string };
 }
 
@@ -70,6 +71,7 @@ const defaults: Settings = {
   showLeft: true,
   showRight: true,
   reviewName: "",
+  ribbonCompact: false,
   turn: { urls: "", username: "", credential: "" },
 };
 
@@ -106,6 +108,7 @@ export const [state, setState] = createStore({
   views: [] as SavedView[],
   paletteOpen: false,
   convertOpen: false,
+  contextMenu: null as { x: number; y: number } | null,
 });
 
 export function persistSettings() {

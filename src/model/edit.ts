@@ -147,3 +147,18 @@ export function splitPair(line: string): [string, string] | null {
   }
   return null;
 }
+
+/** Renames a feature, keeping patterns that copy it and the suppressed list pointing at it. */
+export function renameFeature(doc: Doc, from: string, to: string): Doc {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(to)) throw new Error(`"${to}" is not a valid feature name (letters, digits, _)`);
+  if (doc.features.some((f) => f.id === to)) throw new Error(`"${to}" already exists`);
+  return {
+    ...doc,
+    features: doc.features.map((f) => ({
+      ...f,
+      id: f.id === from ? to : f.id,
+      ...(f.kind === "pattern" && f.target === from ? { target: to } : {}),
+    })) as Feature[],
+    suppressed: doc.suppressed?.map((s) => (s === from ? to : s)),
+  };
+}

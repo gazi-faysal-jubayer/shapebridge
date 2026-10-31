@@ -1,229 +1,335 @@
 import { createSignal, For, Index, Match, Show, Switch, type JSX } from "solid-js";
-import { DropdownMenu } from "@kobalte/core/dropdown-menu";
+import { ContextMenu } from "@kobalte/core/context-menu";
 import Plus from "lucide-solid/icons/plus";
-import ArrowUp from "lucide-solid/icons/arrow-up";
-import ArrowDown from "lucide-solid/icons/arrow-down";
-import Eye from "lucide-solid/icons/eye";
-import EyeOff from "lucide-solid/icons/eye-off";
 import X from "lucide-solid/icons/x";
-import Undo2 from "lucide-solid/icons/undo-2";
-import Redo2 from "lucide-solid/icons/redo-2";
-import RotateCcw from "lucide-solid/icons/rotate-ccw";
-import { targets } from "../interop";
-import { templates, type Doc, type Feature, type Kind, type Profile } from "../model/doc";
-import { addParam, deleteFeature, deleteParam, moveFeature, newFeature, renameParam, splitPair, toggleSuppressed } from "../model/edit";
-import { state } from "../state/store";
-import { formatLength } from "../viewer/math";
+import Check from "lucide-solid/icons/check";
+import { templates, type Doc, type Feature, type Profile } from "../model/doc";
+import { addParam, deleteFeature, deleteParam, moveFeature, renameFeature, renameParam, splitPair, toggleSuppressed } from "../model/edit";
+import { Icon, type IconName } from "./icons";
 import * as c from "../controller";
 
-const kinds: { kind: Kind | "cut"; label: string }[] = [
-  { kind: "extrude", label: "Extrude (add)" },
-  { kind: "cut", label: "Extrude cut" },
-  { kind: "revolve", label: "Revolve" },
-  { kind: "hole", label: "Hole" },
-  { kind: "fillet", label: "Fillet" },
-  { kind: "chamfer", label: "Chamfer" },
-  { kind: "shell", label: "Shell" },
-  { kind: "pattern", label: "Pattern" },
-  { kind: "mirror", label: "Mirror" },
-];
+const ICON: Record<Feature["kind"], IconName> = {
+  extrude: "extrude",
+  revolve: "revolve",
+  hole: "hole",
+  fillet: "fillet",
+  chamfer: "chamfer",
+  shell: "shell",
+  pattern: "linearPattern",
+  mirror: "mirror",
+};
+const iconOf = (f: Feature): IconName =>
+  f.kind === "extrude" && f.op === "cut" ? "cut" : f.kind === "pattern" && f.mode === "polar" ? "polarPattern" : ICON[f.kind];
 
+export const label = (f: Feature) =>
+  f.kind === "extrude"
+    ? f.op === "cut"
+      ? "Cut-Extrude"
+      : "Boss-Extrude"
+    : f.kind === "pattern"
+      ? `${f.mode === "linear" ? "Linear" : "Circular"} pattern`
+      : f.kind[0].toUpperCase() + f.kind.slice(1);
+
+/** Left "Design" tab: the FeatureManager tree, or the PropertyManager while something is being edited. */
 export function Designer() {
-  const [selected, setSelected] = createSignal<string | null>(null);
   return (
     <Show when={c.doc()} fallback={<Templates />}>
-      {(d) => (
-        <div class="designer">
-          <div class="designer-bar">
-            <b>{d().name}</b>
-            <span class="spacer" />
-            <button class="ghost" disabled={!c.canUndo()} onClick={c.undo} title="Undo (Ctrl+Z)" aria-label="Undo">
-              <Undo2 size={15} />
-            </button>
-            <button class="ghost" disabled={!c.canRedo()} onClick={c.redo} title="Redo (Ctrl+Y)" aria-label="Redo">
-              <Redo2 size={15} />
-            </button>
-          </div>
-
-          <h3>Parameters</h3>
-          <table class="params">
-            <tbody>
-              <Index each={d().params}>
-                {(p, i) => (
-                  <tr>
-                    <td>
-                      <input
-                        class="name"
-                        value={p().name}
-                        onChange={(e) => c.updateDoc((x) => renameParam(x, p().name, e.currentTarget.value.trim()))}
-                        aria-label={`Name of parameter ${p().name}`}
-                        title={p().note}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        value={p().expr}
-                        onInput={(e) => c.editParam(i, e.currentTarget.value)}
-                        aria-label={`${p().name} expression`}
-                      />
-                    </td>
-                    <td class="num">{c.paramValues()[p().name]?.toFixed(2) ?? "—"}</td>
-                    <td>
-                      <button class="ghost" onClick={() => c.updateDoc((x) => deleteParam(x, p().name))} aria-label={`Delete ${p().name}`}>
-                        <X size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                )}
-              </Index>
-            </tbody>
-          </table>
-          <button class="ghost add" onClick={() => c.updateDoc(addParam)}>
-            <Plus size={14} /> Add parameter
-          </button>
-
-          <div class="row-head">
-            <h3>Features</h3>
-            <DropdownMenu>
-              <DropdownMenu.Trigger class="ghost add">
-                <Plus size={14} /> Add
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content class="menu">
-                  <For each={kinds}>
-                    {(k) => (
-                      <DropdownMenu.Item
-                        class="menu-item"
-                        onSelect={() => {
-                          const f = newFeature(d(), k.kind);
-                          c.updateDoc((x) => ({ ...x, features: [...x.features, f], rollback: undefined }));
-                          setSelected(f.id);
-                        }}
-                      >
-                        {k.label}
-                      </DropdownMenu.Item>
-                    )}
-                  </For>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu>
-          </div>
-          <ol class="features">
-            <For each={d().features}>
-              {(f, i) => {
-                const off = () => d().suppressed?.includes(f.id);
-                const rolled = () => d().rollback !== undefined && i() >= d().rollback!;
-                const failed = () => c.docError().startsWith(`${f.id}:`);
-                return (
-                  <li classList={{ selected: selected() === f.id, off: off() || rolled(), failed: failed() }}>
-                    <button class="label" onClick={() => setSelected(selected() === f.id ? null : f.id)}>
-                      <span class="kind">{label(f)}</span> <code>{f.id}</code>
-                    </button>
-                    <span class="actions">
-                      <button class="ghost" onClick={() => c.updateDoc((x) => moveFeature(x, i(), -1))} aria-label={`Move ${f.id} up`}>
-                        <ArrowUp size={13} />
-                      </button>
-                      <button class="ghost" onClick={() => c.updateDoc((x) => moveFeature(x, i(), 1))} aria-label={`Move ${f.id} down`}>
-                        <ArrowDown size={13} />
-                      </button>
-                      <button
-                        class="ghost"
-                        onClick={() => c.updateDoc((x) => ({ ...x, rollback: x.rollback === i() + 1 ? undefined : i() + 1 }))}
-                        title="Roll back to after this feature"
-                        aria-label={`Roll back to ${f.id}`}
-                      >
-                        <RotateCcw size={13} />
-                      </button>
-                      <button
-                        class="ghost"
-                        onClick={() => c.updateDoc((x) => toggleSuppressed(x, f.id))}
-                        aria-label={off() ? `Unsuppress ${f.id}` : `Suppress ${f.id}`}
-                      >
-                        <Show when={off()} fallback={<Eye size={13} />}>
-                          <EyeOff size={13} />
-                        </Show>
-                      </button>
-                      <button class="ghost" onClick={() => c.updateDoc((x) => deleteFeature(x, f.id))} aria-label={`Delete ${f.id}`}>
-                        <X size={13} />
-                      </button>
-                    </span>
-                    <Show when={selected() === f.id}>
-                      <FeatureForm index={i()} feature={f} doc={d()} />
-                    </Show>
-                  </li>
-                );
-              }}
-            </For>
-          </ol>
-          <Show when={d().rollback !== undefined}>
-            <p class="muted small">
-              Rolled back: later features are skipped.{" "}
-              <button class="link" onClick={() => c.updateDoc((x) => ({ ...x, rollback: undefined }))}>
-                Roll forward
-              </button>
-            </p>
-          </Show>
-          <Show when={c.docError()}>
-            <p class="error" role="alert">
-              {c.docError()}
-            </p>
-          </Show>
-
-          <Show when={c.measures()}>
-            {(m) => {
-              const fmt = (v: number, p: 1 | 2 | 3 = 1) => formatLength(v, "Millimeter", state.settings.units, p);
-              return (
-                <>
-                  <h3>Exact properties</h3>
-                  <dl class="measures">
-                    <dt>Volume</dt>
-                    <dd>{fmt(m().volume, 3)}</dd>
-                    <dt>Surface area</dt>
-                    <dd>{fmt(m().area, 2)}</dd>
-                    <dt>Size</dt>
-                    <dd>{[0, 1, 2].map((k) => fmt(m().bbox[1][k] - m().bbox[0][k])).join(" × ")}</dd>
-                    <dt>Centre of mass</dt>
-                    <dd>
-                      {m()
-                        .centerOfMass.map((v) => fmt(v))
-                        .join(", ")}
-                    </dd>
-                  </dl>
-                </>
-              );
-            }}
-          </Show>
-
-          <h3>Export, parameters stay editable</h3>
-          <div class="grid">
-            <For each={targets}>{(t) => <button onClick={() => c.exportInterop(t.id)}>{t.label}</button>}</For>
-            <button disabled={!c.step() || c.busy()} onClick={() => c.exportInterop("step")}>
-              STEP (exact solid)
-            </button>
-            <button onClick={() => c.exportInterop("json")}>ShapeBridge .json</button>
-          </div>
-        </div>
-      )}
+      <Show when={c.editing()} fallback={<FeatureManager />}>
+        <PropertyManager />
+      </Show>
     </Show>
   );
 }
 
-const label = (f: Feature) =>
-  f.kind === "extrude"
-    ? f.op === "cut"
-      ? "Cut"
-      : "Extrude"
-    : f.kind === "pattern"
-      ? `${f.mode === "linear" ? "Linear" : "Polar"} pattern`
-      : f.kind[0].toUpperCase() + f.kind.slice(1);
+function FeatureManager() {
+  const d = () => c.doc()!;
+  const [renaming, setRenaming] = createSignal<string | null>(null);
+  const [dragAt, setDragAt] = createSignal<number | null>(null);
+  const rollback = () => dragAt() ?? d().rollback ?? d().features.length;
+  const setRollback = (i: number) =>
+    c.updateDoc((x) => ({
+      ...x,
+      rollback: i >= x.features.length ? undefined : Math.max(0, i),
+    }));
+  let list!: HTMLOListElement;
 
+  // dragging the rollback bar: find the row under the pointer, preview there, commit on release
+  const dragBar = (e: PointerEvent) => {
+    e.preventDefault();
+    const rows = () => [...list.querySelectorAll<HTMLElement>("li.feature")];
+    const move = (ev: PointerEvent) => {
+      const i = rows().findIndex((r) => ev.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+      setDragAt(i === -1 ? rows().length : i);
+    };
+    // window listeners: the bar re-renders under the pointer while dragging, so it can't own the gesture
+    const up = () => {
+      removeEventListener("pointermove", move);
+      removeEventListener("pointerup", up);
+      removeEventListener("pointercancel", up);
+      if (dragAt() !== null) setRollback(dragAt()!);
+      setDragAt(null);
+    };
+    addEventListener("pointermove", move);
+    addEventListener("pointerup", up);
+    addEventListener("pointercancel", up);
+  };
+
+  return (
+    <div class="feature-manager">
+      <div class="fm-head">
+        <Icon name="part" size={18} />
+        <b>{d().name}</b>
+        <span class="spacer" />
+        <button class="ghost" disabled={!c.canUndo()} onClick={c.undo} title="Undo (Ctrl+Z)" aria-label="Undo">
+          <Icon name="undo" size={16} />
+        </button>
+        <button class="ghost" disabled={!c.canRedo()} onClick={c.redo} title="Redo (Ctrl+Y)" aria-label="Redo">
+          <Icon name="redo" size={16} />
+        </button>
+      </div>
+      <ul class="fm-tree" role="tree" aria-label="Part structure">
+        <li role="treeitem">
+          <button class="fm-row" onClick={() => c.beginEdit("equations")}>
+            <Icon name="equations" size={18} /> Equations ({d().params.length})
+          </button>
+        </li>
+        <li role="treeitem" aria-expanded="true">
+          <div class="fm-row static">
+            <Icon name="origin" size={18} /> Origin
+          </div>
+          <ul role="group">
+            <For each={PLANES}>
+              {([name, view]) => (
+                <li role="treeitem">
+                  <button class="fm-row child" onClick={() => c.setView(view)} title="Look at this plane">
+                    <Icon name="plane" size={16} /> {name}
+                  </button>
+                </li>
+              )}
+            </For>
+          </ul>
+        </li>
+      </ul>
+      <ol class="fm-tree features" ref={list} aria-label="Features">
+        <For each={d().features}>
+          {(f, i) => {
+            const off = () => d().suppressed?.includes(f.id);
+            const rolled = () => i() >= rollback();
+            const failed = () => c.docError().startsWith(`${f.id}:`);
+            return (
+              <>
+                <Show when={rollback() === i()}>
+                  <RollbackBar onPointerDown={dragBar} onKey={(by) => setRollback(rollback() + by)} />
+                </Show>
+                <ContextMenu>
+                  <ContextMenu.Trigger as="li" class="feature" classList={{ off: off() || rolled(), failed: failed() }}>
+                    <Show
+                      when={renaming() === f.id}
+                      fallback={
+                        <button
+                          class="fm-row"
+                          onClick={() => c.beginEdit({ id: f.id })}
+                          onDblClick={() => setRenaming(f.id)}
+                          title={failed() ? c.docError() : `${label(f)}: click to edit, double-click to rename, right-click for more`}
+                        >
+                          <Icon name={iconOf(f)} size={18} />
+                          <span>{f.id}</span>
+                          <Show when={failed()}>
+                            <span class="fm-error" aria-label="Failed">
+                              !
+                            </span>
+                          </Show>
+                        </button>
+                      }
+                    >
+                      <input
+                        class="fm-rename"
+                        value={f.id}
+                        ref={(el) => setTimeout(() => el.select())}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setRenaming(null);
+                          if (e.key === "Enter") e.currentTarget.blur();
+                        }}
+                        onBlur={(e) => {
+                          const name = e.currentTarget.value.trim();
+                          setRenaming(null);
+                          if (name && name !== f.id) c.updateDoc((x) => renameFeature(x, f.id, name));
+                        }}
+                        aria-label={`Rename ${f.id}`}
+                      />
+                    </Show>
+                  </ContextMenu.Trigger>
+                  <ContextMenu.Portal>
+                    <ContextMenu.Content class="menu">
+                      <ContextMenu.Item class="menu-item" onSelect={() => c.beginEdit({ id: f.id })}>
+                        Edit feature
+                      </ContextMenu.Item>
+                      <ContextMenu.Item class="menu-item" onSelect={() => setRenaming(f.id)}>
+                        Rename
+                      </ContextMenu.Item>
+                      <ContextMenu.Item class="menu-item" onSelect={() => c.updateDoc((x) => toggleSuppressed(x, f.id))}>
+                        {off() ? "Unsuppress" : "Suppress"}
+                      </ContextMenu.Item>
+                      <ContextMenu.Item class="menu-item" onSelect={() => setRollback(i())}>
+                        Roll back to here
+                      </ContextMenu.Item>
+                      <ContextMenu.Separator class="menu-sep" />
+                      <ContextMenu.Item class="menu-item" onSelect={() => c.updateDoc((x) => moveFeature(x, i(), -1))}>
+                        Move up
+                      </ContextMenu.Item>
+                      <ContextMenu.Item class="menu-item" onSelect={() => c.updateDoc((x) => moveFeature(x, i(), 1))}>
+                        Move down
+                      </ContextMenu.Item>
+                      <ContextMenu.Separator class="menu-sep" />
+                      <ContextMenu.Item class="menu-item" onSelect={() => c.updateDoc((x) => deleteFeature(x, f.id))}>
+                        Delete
+                      </ContextMenu.Item>
+                    </ContextMenu.Content>
+                  </ContextMenu.Portal>
+                </ContextMenu>
+              </>
+            );
+          }}
+        </For>
+        <Show when={rollback() >= d().features.length}>
+          <RollbackBar onPointerDown={dragBar} onKey={(by) => setRollback(rollback() + by)} />
+        </Show>
+      </ol>
+      <Show when={!d().features.length}>
+        <p class="muted small pad">Start with a sketch or a feature from the Features tab of the command bar.</p>
+      </Show>
+      <Show when={c.docError()}>
+        <p class="error small pad" role="alert">
+          {c.docError()}
+        </p>
+      </Show>
+    </div>
+  );
+}
+
+const PLANES = [
+  ["Front plane (XZ)", "front"],
+  ["Top plane (XY)", "top"],
+  ["Right plane (YZ)", "right"],
+] as const;
+
+function RollbackBar(props: { onPointerDown: (e: PointerEvent) => void; onKey: (by: -1 | 1) => void }) {
+  return (
+    <li
+      class="rollback-bar"
+      role="separator"
+      tabIndex={0}
+      aria-label="Rollback bar: features below it are skipped. Drag, or use the arrow keys."
+      title="Rollback bar: drag to roll the part back"
+      onPointerDown={props.onPointerDown}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowUp") (e.preventDefault(), props.onKey(-1));
+        if (e.key === "ArrowDown") (e.preventDefault(), props.onKey(1));
+      }}
+    />
+  );
+}
+
+function PropertyManager() {
+  const target = () => c.editing();
+  const feature = () => {
+    const t = target();
+    return t && t !== "equations" ? c.doc()!.features.find((f) => f.id === t.id) : undefined;
+  };
+  const index = () => c.doc()!.features.findIndex((f) => f === feature());
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") (e.preventDefault(), c.cancelEdit());
+    // Enter commits a field (change event) first, then closes like OK
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") ((e.target as HTMLElement).blur?.(), c.okEdit());
+  };
+  return (
+    <div class="property-manager" onKeyDown={onKey}>
+      <div class="pm-head">
+        <Icon name={target() === "equations" ? "equations" : feature() ? iconOf(feature()!) : "part"} size={22} />
+        <div>
+          <b>{target() === "equations" ? "Equations" : feature() ? label(feature()!) : "Feature"}</b>
+          <Show when={feature()}>
+            <div class="muted small">{feature()!.id}</div>
+          </Show>
+        </div>
+        <span class="spacer" />
+        <button class="pm-ok" onClick={c.okEdit} title="OK (Enter)" aria-label="OK">
+          <Check size={18} />
+        </button>
+        <button class="pm-cancel" onClick={c.cancelEdit} title="Cancel (Esc): undo the changes made here" aria-label="Cancel">
+          <X size={18} />
+        </button>
+      </div>
+      <Show when={target() === "equations"}>
+        <section class="pm-section">
+          <h3>Parameters</h3>
+          <Equations />
+        </section>
+      </Show>
+      <Show when={feature()}>
+        {(f) => (
+          <section class="pm-section">
+            <h3>
+              {f().kind === "fillet" || f().kind === "chamfer" ? "Items to modify" : f().kind === "pattern" ? "Direction" : "Definition"}
+            </h3>
+            <FeatureForm index={index()} feature={f()} doc={c.doc()!} />
+          </section>
+        )}
+      </Show>
+      <Show when={c.docError()}>
+        <p class="error small pad" role="alert">
+          {c.docError()}
+        </p>
+      </Show>
+    </div>
+  );
+}
+
+function Equations() {
+  const d = () => c.doc()!;
+  return (
+    <>
+      <table class="params">
+        <tbody>
+          <Index each={d().params}>
+            {(p, i) => (
+              <tr>
+                <td>
+                  <input
+                    class="name"
+                    value={p().name}
+                    onChange={(e) => c.updateDoc((x) => renameParam(x, p().name, e.currentTarget.value.trim()))}
+                    aria-label={`Name of parameter ${p().name}`}
+                    title={p().note}
+                  />
+                </td>
+                <td>
+                  <input value={p().expr} onInput={(e) => c.editParam(i, e.currentTarget.value)} aria-label={`${p().name} expression`} />
+                </td>
+                <td class="num">{c.paramValues()[p().name]?.toFixed(2) ?? "—"}</td>
+                <td>
+                  <button class="ghost" onClick={() => c.updateDoc((x) => deleteParam(x, p().name))} aria-label={`Delete ${p().name}`}>
+                    <X size={13} />
+                  </button>
+                </td>
+              </tr>
+            )}
+          </Index>
+        </tbody>
+      </table>
+      <button class="ghost add" onClick={() => c.updateDoc(addParam)}>
+        <Plus size={14} /> Add parameter
+      </button>
+    </>
+  );
+}
 // ---------- feature form ----------
 
 function FeatureForm(props: { index: number; feature: Feature; doc: Doc }) {
   // writes one field of this feature; `path` walks into nested objects such as plane or profile
   const set = (path: (string | number)[], value: unknown) =>
     c.updateDoc((d) => {
-      if (path.length === 0) return (d.features[props.index] = value as Feature), d;
+      if (path.length === 0) return ((d.features[props.index] = value as Feature), d);
       let node = d.features[props.index] as unknown as Record<string | number, unknown>;
       for (const k of path.slice(0, -1)) node = node[k] as Record<string | number, unknown>;
       node[path.at(-1)!] = value;
@@ -240,7 +346,13 @@ function FeatureForm(props: { index: number; feature: Feature; doc: Doc }) {
     <label class="field">
       <span>{labelText}</span>
       <select value={value} onChange={(e) => set(path, e.currentTarget.value)}>
-        <For each={options}>{([v, l]) => <option value={v} selected={v === value}>{l}</option>}</For>
+        <For each={options}>
+          {([v, l]) => (
+            <option value={v} selected={v === value}>
+              {l}
+            </option>
+          )}
+        </For>
       </select>
     </label>
   );

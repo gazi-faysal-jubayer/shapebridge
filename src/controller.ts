@@ -4,7 +4,8 @@ import { createEffect, createSignal, on } from "solid-js";
 import { loadViews, setState, state, storeViews, type StdView, type Tool } from "./state/store";
 import type { Engine, MeshExt } from "./viewer/engine";
 import { saveFile } from "./platform/save";
-import { templates, migrate, resolve, type Doc } from "./model/doc";
+import { templates, migrate, resolve, type Doc, type Feature } from "./model/doc";
+import { newFeature } from "./model/edit";
 import type { Measures } from "./kernel/build";
 import { targets } from "./interop";
 import { build } from "./kernel/protocol";
@@ -23,6 +24,11 @@ export async function mountViewer(el: HTMLElement) {
     },
     onHover: (p, scene) => setState({ hover: p, hoverScene: scene }),
     onPlace: (p) => placeHandler(p),
+    onContext: (x, y, key) => {
+      // like CAD tools: right-clicking an unselected part selects it first
+      if (key && !state.selection.includes(key)) setState("selection", [key]);
+      setState("contextMenu", { x, y });
+    },
     onMeasure: (m, n) => setState({ measurement: m, measurePoints: n }),
     onCamera: () => cameraListeners.forEach((f) => f()),
   });
@@ -134,8 +140,17 @@ export function toggleHidden(keys: string[]) {
   keys.forEach((k) => (allHidden ? hidden.delete(k) : hidden.add(k)));
   setState("hidden", [...hidden]);
 }
-export const fit = () => engine?.fit(keysOrAll());
-export const setView = (v: StdView) => engine?.setView(v);
+// camera history for "previous view"
+const cameras: object[] = [];
+const remember = () => engine && (cameras.push(engine.getCamera()), cameras.length > 30 && cameras.shift());
+export function previousView() {
+  const cam = cameras.pop();
+  if (cam) engine?.setCamera(cam as never);
+}
+
+export const fit = () => (remember(), engine?.fit(keysOrAll()));
+export const fitAll = () => (remember(), engine?.fit([]));
+export const setView = (v: StdView) => (remember(), engine?.setView(v));
 export function setUpAxis(up: "y" | "z") {
   setState("upAxis", up);
   engine?.setUpAxis(up);
@@ -217,6 +232,7 @@ export function loadDoc(d: unknown = templates[0]) {
     resolve(next); // reject bad documents before they replace the current one
     past.length = future.length = 0;
     setHistoryTick((t) => t + 1);
+    setEditing(null);
     setDoc(next);
     return rebuild(false);
   } catch (e) {
@@ -265,6 +281,38 @@ export function redo() {
   if (!next) return;
   past.push(doc()!);
   commit(next);
+}
+
+// ---------- PropertyManager-style editing: OK keeps the edits, Cancel rolls back to where editing began ----------
+
+export type Editing = { id: string } | "equations" | null;
+export const [editing, setEditing] = createSignal<Editing>(null);
+let editMark = 0;
+
+export function beginEdit(target: Exclude<Editing, null>) {
+  if (editing()) okEdit();
+  editMark = past.length;
+  setEditing(target);
+}
+export const okEdit = () => setEditing(null);
+export function cancelEdit() {
+  while (past.length > editMark) undo();
+  future.length = 0;
+  setHistoryTick((t) => t + 1);
+  setEditing(null);
+}
+
+const blankDoc = (): Doc => ({ format: "shapebridge/2", name: "part1", units: "mm", params: [], features: [] });
+
+/** Adds a feature (starting a new part if none is open) and opens it for editing. */
+export function addFeature(kind: Parameters<typeof newFeature>[1], patch: (f: Feature) => Feature = (f) => f) {
+  if (!doc()) {
+    past.length = future.length = 0;
+    setDoc(blankDoc());
+  }
+  const f = patch(newFeature(doc()!, kind));
+  beginEdit({ id: f.id });
+  updateDoc((d) => ({ ...d, features: [...d.features, f], rollback: undefined }));
 }
 
 export function hasAutosave() {
