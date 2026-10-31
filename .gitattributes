@@ -1,0 +1,7 @@
+# LF everywhere so golden snapshots and hook scripts match on Windows, macOS and Linux
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.icns binary
+*.stl binary
+*.wasm binary
