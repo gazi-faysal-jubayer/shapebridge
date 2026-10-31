@@ -44,7 +44,7 @@ Press **Ctrl+K** to search every command. Common shortcuts:
 
 ## Theme and units
 
-- **View → Cycle theme** switches between system, light and dark.
+- The app starts in the dark theme. **View → Cycle theme** switches between system, light and dark.
 - Pick display units in the Properties panel. Files that don't state a unit are treated as millimetres.
 
 ## Convert

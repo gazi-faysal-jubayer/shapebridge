@@ -1,56 +1,88 @@
 /* ---------- tokens ---------- */
+/* dark is the default look; light applies when chosen, or when the OS asks for it under "system" */
 :root {
-  --bg: #eef2f6;
-  --surface: #ffffff;
-  --surface-2: #f6f8fa;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --accent: #0d9488;
-  --accent-soft: #ccfbf1;
+  --bg: #0b1220;
+  --surface: #111a2b;
+  --surface-2: #0e1626;
+  --surface-3: #16223a;
+  --border: #23324a;
+  --text: #e6edf7;
+  --muted: #8a9bb4;
+  --accent: #3b82f6;
+  --accent-fill: #2563eb;
+  --accent-soft: #172b4d;
   --accent-text: #ffffff;
-  --error: #b91c1c;
-  --viewport: radial-gradient(ellipse at 50% 35%, #ffffff 0%, #e6ebf1 70%);
-  --shadow: 0 8px 28px rgb(15 23 42 / 0.16);
-  --radius: 8px;
-  color-scheme: light;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --error: #f87171;
+  --focus: #93c5fd;
+  --viewport: radial-gradient(ellipse at 50% 30%, #1a2740 0%, #0b1220 78%);
+  --shadow: 0 10px 30px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(255 255 255 / 0.03);
+  --glass: rgb(17 26 43 / 0.85);
+  color-scheme: dark;
+  --icon-accent: var(--accent);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --dur: 160ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   font:
-    13px/1.45 system-ui,
+    13px/1.45 "Inter Variable",
+    system-ui,
     -apple-system,
     "Segoe UI",
     Roboto,
     sans-serif;
+  font-feature-settings: "cv11", "ss01";
 }
-:root[data-theme="dark"] {
-  --bg: #0a0f1a;
-  --surface: #111827;
-  --surface-2: #0d1422;
-  --text: #e5e7eb;
-  --muted: #94a3b8;
-  --border: #1f2937;
-  --accent: #14b8a6;
-  --accent-soft: #134e4a;
-  --accent-text: #04201d;
-  --error: #f87171;
-  --viewport: radial-gradient(ellipse at 50% 35%, #1f2a3d 0%, #0a0f1a 75%);
-  --shadow: 0 8px 28px rgb(0 0 0 / 0.5);
-  color-scheme: dark;
+:root[data-theme="light"] {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #eef2f7;
+  --border: #dce2ea;
+  --text: #0f172a;
+  --muted: #5b6b82;
+  --accent: #2563eb;
+  --accent-fill: #2563eb;
+  --accent-soft: #dbeafe;
+  --accent-text: #ffffff;
+  --success: #16a34a;
+  --warn: #b45309;
+  --error: #dc2626;
+  --focus: #1d4ed8;
+  --viewport: radial-gradient(ellipse at 50% 30%, #ffffff 0%, #e3e8ef 75%);
+  --shadow: 0 8px 24px rgb(15 23 42 / 0.14), 0 0 0 1px rgb(15 23 42 / 0.04);
+  --glass: rgb(255 255 255 / 0.85);
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not([data-theme="dark"]) {
-    --bg: #0a0f1a;
-    --surface: #111827;
-    --surface-2: #0d1422;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --border: #1f2937;
-    --accent: #14b8a6;
-    --accent-soft: #134e4a;
-    --accent-text: #04201d;
-    --error: #f87171;
-    --viewport: radial-gradient(ellipse at 50% 35%, #1f2a3d 0%, #0a0f1a 75%);
-    --shadow: 0 8px 28px rgb(0 0 0 / 0.5);
-    color-scheme: dark;
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --surface-3: #eef2f7;
+    --border: #dce2ea;
+    --text: #0f172a;
+    --muted: #5b6b82;
+    --accent: #2563eb;
+    --accent-fill: #2563eb;
+    --accent-soft: #dbeafe;
+    --accent-text: #ffffff;
+    --success: #16a34a;
+    --warn: #b45309;
+    --error: #dc2626;
+    --focus: #1d4ed8;
+    --viewport: radial-gradient(ellipse at 50% 30%, #ffffff 0%, #e3e8ef 75%);
+    --shadow: 0 8px 24px rgb(15 23 42 / 0.14), 0 0 0 1px rgb(15 23 42 / 0.04);
+    --glass: rgb(255 255 255 / 0.85);
+    color-scheme: light;
   }
 }
 
@@ -114,7 +146,7 @@ kbd {
   background: var(--surface-2);
 }
 .primary {
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--accent-text);
   border-color: var(--accent);
 }
@@ -150,7 +182,7 @@ kbd {
 .pill {
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--accent-text);
   font-weight: 600;
 }
@@ -239,7 +271,7 @@ kbd {
   touch-action: none;
 }
 .splitter:hover {
-  background: var(--accent);
+  background: var(--accent-fill);
   opacity: 0.4;
 }
 .stage {
@@ -374,7 +406,7 @@ kbd {
   position: absolute;
   bottom: -1px;
   height: 2px;
-  background: var(--accent);
+  background: var(--accent-fill);
   transition: all 0.2s;
 }
 .tab-body {
@@ -659,7 +691,7 @@ h3 {
   padding: 3px 9px;
 }
 .seg button.on {
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--accent-text);
 }
 
@@ -1101,7 +1133,7 @@ h3 {
   transform: translateX(-50%);
   padding: 4px 12px;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--accent-text);
   font-weight: 600;
   font-size: 12px;
@@ -1241,7 +1273,7 @@ h3 {
   right: 16px;
   bottom: 44px;
   z-index: 40;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--accent-text);
   border-color: var(--accent);
   border-radius: 999px;
@@ -1290,16 +1322,7 @@ h3 {
 }
 
 /* ---------- CAD workspace: ribbon, feature tree, property panel, heads-up toolbar, task pane ---------- */
-:root {
-  --icon-accent: #0d9488;
-}
-:root[data-theme="dark"] {
-  --icon-accent: #2dd4bf;
-}
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --icon-accent: #2dd4bf;
-  }
 }
 .cad-icon {
   flex: none;
@@ -1466,7 +1489,7 @@ h3 {
   height: 4px;
   margin: 3px 6px;
   border-radius: 2px;
-  background: #3b82f6;
+  background: var(--accent);
   cursor: ns-resize;
   list-style: none;
 }
@@ -1474,7 +1497,7 @@ h3 {
 .rollback-bar:focus-visible {
   height: 6px;
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #3b82f6 30%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .pm-head b {
   display: block;
@@ -1489,12 +1512,12 @@ h3 {
   border-radius: 50%;
 }
 .pm-ok {
-  color: #16a34a;
-  border-color: #16a34a;
+  color: var(--success);
+  border-color: var(--success);
 }
 .pm-cancel {
-  color: #dc2626;
-  border-color: #dc2626;
+  color: var(--error);
+  border-color: var(--error);
 }
 .pm-section {
   padding: 4px 12px 12px;
@@ -1617,7 +1640,7 @@ h3 {
   min-width: 14px;
   height: 14px;
   border-radius: 7px;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--accent-text);
   font-size: 9px;
   line-height: 14px;
@@ -1647,5 +1670,93 @@ h3 {
   }
   .narrow-only {
     display: flex;
+  }
+}
+
+/* ---------- polish: one focus ring, one motion curve, consistent states ---------- */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+button,
+select,
+input,
+.menu-item,
+.fm-row {
+  transition:
+    background-color var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+/* :where keeps this below every component's own hover/on rule */
+:where(button:not(.primary)):hover:not(:disabled) {
+  background-color: var(--surface-3);
+}
+.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-fill) 86%, white);
+  border-color: color-mix(in srgb, var(--accent-fill) 86%, white);
+}
+button:disabled,
+select:disabled,
+[data-disabled] {
+  cursor: not-allowed;
+}
+.ribbon-btn,
+.hud-btn {
+  min-height: 32px;
+}
+.ribbon-btn:active:not(:disabled),
+.hud-btn:active:not(:disabled) {
+  background: var(--accent-soft);
+}
+.task-tabs button.on {
+  box-shadow: inset -2px 0 0 var(--accent);
+}
+.heads-up {
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+}
+.statusbar,
+.props,
+input[type="number"],
+td {
+  font-variant-numeric: tabular-nums;
+}
+.status-msg.busy::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: sb-spin 0.8s linear infinite;
+}
+@keyframes sb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* touch screens get full-size targets; the desktop keeps CAD density */
+@media (pointer: coarse) {
+  button,
+  select,
+  .menu-item,
+  .ribbon-btn,
+  .hud-btn,
+  .task-tabs button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
   }
 }

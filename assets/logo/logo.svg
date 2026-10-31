@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ShapeBridge">
-  <!-- isometric solid whose front face is cut by a bridge arch -->
-  <path d="M32 4 58 19 32 34 6 19Z" fill="#5eead4"/>
-  <path d="M6 19 32 34V60L6 45Z" fill="#0d9488"/>
-  <path d="M58 19 32 34V60L58 45Z" fill="#0f766e"/>
-  <path d="M10 46V33a10 10 0 0 1 18 6V56Z" fill="#0f172a" opacity=".9"/>
-  <path d="M36 56V39a10 10 0 0 1 18-6V46Z" fill="#0f172a" opacity=".9"/>
-  <path d="M32 4 58 19 32 34 6 19Z M32 34V60" fill="none" stroke="#f0fdfa" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- two offset solids joined by a span: shape + bridge; drawn for this project -->
+  <path d="M32.4 26.4 50.3 36.7 50.3 27.7 32.4 17.3Z" fill="#3b82f6"/>
+  <path d="M60.1 31.1 50.3 36.7 50.3 27.7 60.1 22.0Z" fill="#1d4ed8"/>
+  <path d="M42.2 11.7 60.1 22.0 50.3 27.7 32.4 17.3Z" fill="#93c5fd"/>
+  <path d="M28.5 37.6 36.7 42.3 36.7 28.8 28.5 24.1Z" fill="#60a5fa"/>
+  <path d="M40.6 40.1 36.7 42.3 36.7 28.8 40.6 26.6Z" fill="#2563eb"/>
+  <path d="M32.4 21.9 40.6 26.6 36.7 28.8 28.5 24.1Z" fill="#bfdbfe"/>
+  <path d="M4.1 39.3 26.9 52.5 26.9 43.5 4.1 30.3Z" fill="#3b82f6"/>
+  <path d="M36.7 46.8 26.9 52.5 26.9 43.5 36.7 37.8Z" fill="#1d4ed8"/>
+  <path d="M13.9 24.7 36.7 37.8 26.9 43.5 4.1 30.3Z" fill="#93c5fd"/>
 </svg>

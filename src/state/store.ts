@@ -64,7 +64,7 @@ interface Settings {
 }
 
 const defaults: Settings = {
-  theme: "system",
+  theme: "dark",
   units: "mm",
   display: "edges",
   projection: "perspective",
