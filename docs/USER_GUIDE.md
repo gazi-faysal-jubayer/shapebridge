@@ -45,6 +45,21 @@ Press **Ctrl+K** to search every command. Common shortcuts:
 - **View → Cycle theme** switches between system, light and dark.
 - Pick display units in the Properties panel. Files that don't state a unit are treated as millimetres.
 
+## Design a parametric part
+
+Open the **Design** tab, then pick a template (bracket, enclosure, flange, knob), or press Ctrl+K and type "template".
+
+- **Parameters:** every dimension is a named value or an expression, such as `thickness * 2` or `r * cos(30)`. Angles are in degrees. Rename a parameter and every use is updated. A parameter that is still used can't be deleted.
+- **Features:** **Add** extrude, cut, revolve, hole, fillet, chamfer, shell, pattern or mirror. Click a feature to edit it.
+  - The arrow buttons reorder it.
+  - The eye button suppresses it.
+  - ↺ rolls the model back to just after it.
+  - × deletes it.
+  - A feature that fails turns red, with the reason below the list.
+- **Undo/redo** with Ctrl+Z / Ctrl+Y. Your design is autosaved on this device ("Restore autosaved design"), and Ctrl+S saves a `.sbridge.json`.
+- **Exact properties** (volume, area, size, centre of mass) come from the OpenCascade kernel.
+- **Export, parameters stay editable:** FreeCAD macro, OpenSCAD, CadQuery, Fusion 360 script, CSV parameter table, or an exact STEP solid. See [INTEROP.md](INTEROP.md) for what each tool keeps editable.
+
 ## Live share
 
 **Share live** gives you a link that opens in any browser. The model is sent directly, peer-to-peer, and viewers follow your camera. **Stop sharing** ends the session.

@@ -1,6 +1,7 @@
 // Every user action, once: menus, the command palette and keyboard shortcuts are all generated from this list.
 import { setState, state, type DisplayMode, type StdView } from "../state/store";
 import * as c from "../controller";
+import { templates } from "../model/doc";
 
 export interface Action {
   id: string;
@@ -20,6 +21,11 @@ const view = (v: StdView) => () => c.setView(v);
 export const actions: Action[] = [
   { id: "open", label: "Open file…", group: "File", keys: "Ctrl+O", run: () => document.getElementById("file-input")?.click() },
   { id: "new-part", label: "New parametric part", group: "Design", keys: "Ctrl+Shift+N", run: () => c.loadDoc() },
+  ...templates.map((t): Action => ({ id: `template-${t.name}`, label: `New part from template: ${t.name}`, group: "Design", run: () => c.loadDoc(t) })),
+  { id: "undo", label: "Undo", group: "Design", keys: "Ctrl+Z", run: c.undo, enabled: c.canUndo },
+  { id: "redo", label: "Redo", group: "Design", keys: "Ctrl+Y", run: c.redo, enabled: c.canRedo },
+  { id: "save-design", label: "Save design (.sbridge.json)", group: "Design", keys: "Ctrl+S", run: () => c.exportInterop("json"), enabled: () => !!c.doc() },
+  { id: "restore-design", label: "Restore autosaved design", group: "Design", run: c.restoreAutosave, enabled: c.hasAutosave },
   { id: "sample-plate", label: "Open sample: plate (STEP)", group: "File", run: () => c.openSample("plate.step") },
   { id: "sample-assembly", label: "Open sample: assembly (STEP)", group: "File", run: () => c.openSample("assembly.step") },
   { id: "screenshot", label: "Save screenshot (PNG)", group: "File", keys: "P", run: () => c.screenshot(2), enabled: hasModel },

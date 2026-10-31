@@ -8,18 +8,18 @@ depth = 40;
 thickness = 8;
 boss_r = 12;
 boss_h = thickness * 2;
-hole_r = boss_r / 2;
+hole_d = boss_r;
+corner_r = 4;
+
+// NOTE: fillet "corners" has no OpenSCAD equivalent and is not applied (radius 4 on vertical edges).
 
 difference() {
   difference() {
-    difference() {
-      union() {
-        translate([0, 0, 0]) cube([width, depth, thickness]);
-        translate([width / 2, depth / 2, thickness]) cylinder(r = boss_r, h = boss_h);
-      }
-      translate([width / 2, depth / 2, 0]) cylinder(r = hole_r, h = thickness + boss_h);
+    union() {
+      multmatrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]) translate([0, 0, min(0, thickness)]) linear_extrude(height = abs(thickness)) polygon([[0, 0], [width, 0], [width, depth], [0, depth]]); // base
+      multmatrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, thickness], [0, 0, 0, 1]]) translate([0, 0, min(0, boss_h)]) linear_extrude(height = abs(boss_h)) translate([width / 2, depth / 2]) circle(r = boss_r); // boss
     }
-    translate([thickness * 1.5, depth / 2, 0]) cylinder(r = thickness / 2, h = thickness);
+    multmatrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, thickness + boss_h], [0, 0, 0, 1]]) { translate([width / 2, depth / 2, 0]) { translate([0, 0, -(thickness + boss_h)]) cylinder(r = hole_d / 2, h = thickness + boss_h + 0.0001); } } // bore
   }
-  translate([width - thickness * 1.5, depth / 2, 0]) cylinder(r = thickness / 2, h = thickness);
+  multmatrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, thickness], [0, 0, 0, 1]]) { translate([thickness * 1.5, depth / 2, 0]) { translate([0, 0, -(thickness)]) cylinder(r = 6.6 / 2, h = thickness + 0.0001); translate([0, 0, -(3)]) cylinder(r = 11 / 2, h = 3 + 0.0001); } translate([width - thickness * 1.5, depth / 2, 0]) { translate([0, 0, -(thickness)]) cylinder(r = 6.6 / 2, h = thickness + 0.0001); translate([0, 0, -(3)]) cylinder(r = 11 / 2, h = 3 + 0.0001); } } // mount
 }

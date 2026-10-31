@@ -20,3 +20,4 @@ describe("shortcuts", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 });
+

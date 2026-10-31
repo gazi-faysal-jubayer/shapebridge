@@ -3,7 +3,7 @@
 import opencascade from "replicad-opencascadejs";
 import wasmUrl from "replicad-opencascadejs/wasm?url";
 import { setOC } from "replicad";
-import { buildShape } from "./build";
+import { buildShape, measure } from "./build";
 import type { KernelRequest, KernelResponse } from "./protocol";
 
 const ready = (opencascade as unknown as (o: object) => Promise<unknown>)({ locateFile: () => wasmUrl }).then((oc) =>
@@ -16,12 +16,13 @@ self.onmessage = async (e: MessageEvent<KernelRequest>) => {
   try {
     await ready;
     const shape = buildShape(doc);
+    const measures = measure(shape);
     const [stl, step] = await Promise.all([
       shape.blobSTL({ binary: true, tolerance: 0.05, angularTolerance: 0.2 }).arrayBuffer(),
       shape.blobSTEP().arrayBuffer(),
     ]);
     shape.delete();
-    res = { id, ok: true, stl, step };
+    res = { id, ok: true, stl, step, measures };
   } catch (err) {
     res = { id, ok: false, error: err instanceof Error ? err.message : String(err) };
   }

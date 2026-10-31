@@ -102,13 +102,13 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 - SketchUp SDK opt-in plugin · M
 - Research spikes: clean-room `x_t` text, `sat` text, JT (ISO 14306) · L each
 
-### M3 Parametric designer (v0.6)
-- Feature panel: add, reorder, delete, suppress features · M
-- New features: sketch extrude (polyline/arc/circle), revolve, fillet, chamfer, shell, linear/polar pattern, hole wizard · L
-- Sketcher with dimensional constraints (start with dimension-only, then a geometric solver such as planegcs WASM) · L
-- Undo/redo, autosave, `.sbridge.json` versioning and migration · M
-- Parameter units (mm, deg) and trig functions with per-target degree/radian mapping · S
-- Mass properties: volume, area, centre of mass · S
+### M3 Parametric designer (v0.2 except the constraint sketcher)
+- [x] Feature panel: add, edit, reorder, delete, suppress, roll back · M
+- [x] Features: sketch extrude/cut (rect, circle, polygon, polyline), revolve, fillet, chamfer, shell, linear/polar pattern, holes (simple/counterbore/countersink), mirror · L
+- [ ] Constraint sketcher (planegcs WASM, constraints mapped to FreeCAD Sketcher) · L
+- [x] Undo/redo, autosave, `.sbridge.json` v2 with v1 migration · M
+- [x] Trig functions (degrees) with per-target mapping; min/max/round/floor/ceil · S — [ ] typed parameter units (mm/deg)
+- [x] Mass properties: volume, area, size, centre of mass · S
 
 ### M4 Share (v0.7)
 - Presenter controls: follow-me toggle (done), laser pointer, comment pins synced to peers · M

@@ -4,7 +4,8 @@ import { createEffect, createSignal, on } from "solid-js";
 import { loadViews, setState, state, storeViews, type StdView, type Tool } from "./state/store";
 import type { Engine, MeshExt } from "./viewer/engine";
 import { saveFile } from "./platform/save";
-import { sampleDoc, resolve, type Doc } from "./model/doc";
+import { templates, migrate, resolve, type Doc } from "./model/doc";
+import type { Measures } from "./kernel/build";
 import { targets } from "./interop";
 import { build } from "./kernel/protocol";
 import type { HostSession } from "./share/share";
@@ -194,19 +195,88 @@ export const [doc, setDoc] = createSignal<Doc | null>(null);
 export const [step, setStep] = createSignal<ArrayBuffer | null>(null);
 export const [docError, setDocError] = createSignal("");
 export const [busy, setBusy] = createSignal(false);
+export const [measures, setMeasures] = createSignal<Measures | null>(null);
+// undo/redo: whole-document snapshots (documents are small)
+const past: Doc[] = [];
+const future: Doc[] = [];
+export const [historyTick, setHistoryTick] = createSignal(0);
 let rebuildTimer: number | undefined;
+const AUTOSAVE = "shapebridge.autosave.v2";
 
-export function loadDoc(d: Doc = sampleDoc) {
-  setDoc(structuredClone(d));
-  return rebuild(false);
+export function loadDoc(d: unknown = templates[0]) {
+  try {
+    const next = migrate(structuredClone(d));
+    resolve(next); // reject bad documents before they replace the current one
+    past.length = future.length = 0;
+    setHistoryTick((t) => t + 1);
+    setDoc(next);
+    return rebuild(false);
+  } catch (e) {
+    setState("status", `Not a valid ShapeBridge document: ${(e as Error).message}`);
+  }
+}
+
+/** Applies an edit: records history, autosaves, and rebuilds after a short pause. */
+export function updateDoc(fn: (d: Doc) => Doc) {
+  const cur = doc();
+  if (!cur) return;
+  let next: Doc;
+  try {
+    next = fn(structuredClone(cur));
+  } catch (e) {
+    return setDocError((e as Error).message);
+  }
+  past.push(cur);
+  if (past.length > 200) past.shift();
+  future.length = 0;
+  commit(next);
+}
+
+function commit(next: Doc) {
+  setDoc(next);
+  setHistoryTick((t) => t + 1);
+  try {
+    localStorage.setItem(AUTOSAVE, JSON.stringify(next));
+  } catch {
+    // autosave is best effort
+  }
+  clearTimeout(rebuildTimer);
+  rebuildTimer = window.setTimeout(() => rebuild(true), 300);
+}
+
+export const canUndo = () => (historyTick(), past.length > 0);
+export const canRedo = () => (historyTick(), future.length > 0);
+export function undo() {
+  const prev = past.pop();
+  if (!prev) return;
+  future.push(doc()!);
+  commit(prev);
+}
+export function redo() {
+  const next = future.pop();
+  if (!next) return;
+  past.push(doc()!);
+  commit(next);
+}
+
+export function hasAutosave() {
+  try {
+    return !!localStorage.getItem(AUTOSAVE);
+  } catch {
+    return false;
+  }
+}
+export function restoreAutosave() {
+  try {
+    const raw = localStorage.getItem(AUTOSAVE);
+    if (raw) loadDoc(JSON.parse(raw));
+  } catch (e) {
+    setState("status", `Could not restore the autosaved design: ${(e as Error).message}`);
+  }
 }
 
 export function editParam(i: number, expr: string) {
-  const d = structuredClone(doc()!);
-  d.params[i].expr = expr;
-  setDoc(d);
-  clearTimeout(rebuildTimer);
-  rebuildTimer = window.setTimeout(() => rebuild(true), 300);
+  updateDoc((d) => ((d.params[i].expr = expr), d));
 }
 
 async function rebuild(preserveCamera: boolean) {
@@ -221,7 +291,9 @@ async function rebuild(preserveCamera: boolean) {
   setState("status", "Building with OpenCascade… (the first build downloads the kernel)");
   try {
     const out = await build(d);
+    if (doc() !== d) return; // a newer edit is already on its way
     setStep(out.step);
+    setMeasures(out.measures);
     await show([new File([out.stl], `${d.name}.stl`)], preserveCamera);
     setState("modelName", `${d.name}.sbridge.json`);
   } catch (e) {

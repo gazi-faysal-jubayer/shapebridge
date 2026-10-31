@@ -58,7 +58,8 @@ export function convert(value: number, modelUnit: string, units: Units, power: 1
 }
 
 export function formatLength(value: number, modelUnit: string, units: Units, power: 1 | 2 | 3 = 1): string {
-  const v = convert(value, modelUnit, units, power);
+  const raw = convert(value, modelUnit, units, power);
+  const v = Math.abs(raw) < 1e-9 ? 0 : raw; // kernel round-off would print as "-0"
   const digits = Math.abs(v) >= 1000 ? 0 : Math.abs(v) >= 10 ? 2 : 3;
   const suffix = power === 1 ? units : `${units}${power === 2 ? "²" : "³"}`;
   return `${v.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 })} ${suffix}`;

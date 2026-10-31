@@ -2,6 +2,33 @@
 # Units: mm. Edit the parameters below; geometry updates from them.
 
 import FreeCAD as App
+import Part
+import Sketcher
+import Draft
+
+
+def pick_edges(shape, sel):
+    """Edge indices (1-based) matching ShapeBridge edge selections."""
+    bb = shape.BoundBox
+    picked = []
+    for i, e in enumerate(shape.Edges, 1):
+        zs = [v.Point.z for v in e.Vertexes]
+        if sel == "all":
+            picked.append(i)
+        elif sel == "vertical":
+            if isinstance(e.Curve, Part.Line) and abs(abs(e.Curve.Direction.normalize().z) - 1) < 1e-6:
+                picked.append(i)
+        elif all(abs(z - (bb.ZMax if sel == "top" else bb.ZMin)) < 1e-2 for z in zs):
+            picked.append(i)
+    return picked
+
+
+def pick_face(shape, side):
+    z = shape.BoundBox.ZMax if side == "top" else shape.BoundBox.ZMin
+    for i, f in enumerate(shape.Faces, 1):
+        if abs(f.BoundBox.ZMin - z) < 1e-2 and abs(f.BoundBox.ZMax - z) < 1e-2:
+            return "Face%d" % i
+
 
 doc = App.newDocument("bracket")
 sheet = doc.addObject("Spreadsheet::Sheet", "Params")
@@ -21,60 +48,144 @@ sheet.setAlias("B4", "boss_r")
 sheet.set("A5", "boss_h")
 sheet.set("B5", "=thickness * 2")
 sheet.setAlias("B5", "boss_h")
-sheet.set("A6", "hole_r")
-sheet.set("B6", "=boss_r / 2")
-sheet.setAlias("B6", "hole_r")
+sheet.set("A6", "hole_d")
+sheet.set("B6", "=boss_r")
+sheet.setAlias("B6", "hole_d")
+sheet.set("A7", "corner_r")
+sheet.set("B7", "4")
+sheet.setAlias("B7", "corner_r")
 doc.recompute()
 
-base = doc.addObject("Part::Box", "base")
-base.setExpression("Length", "Params.width")
-base.setExpression("Width", "Params.depth")
-base.setExpression("Height", "Params.thickness")
-base.setExpression("Placement.Base.x", "0")
-base.setExpression("Placement.Base.y", "0")
-base.setExpression("Placement.Base.z", "0")
+# base
+base_sketch = doc.addObject("Sketcher::SketchObject", "base_sketch")
+base_sketch.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(1, 0, 0), App.Vector(0, 1, 0), App.Vector(0, 0, 1), "ZXY"))
+base_sketch.setExpression("Placement.Base.x", "0")
+base_sketch.setExpression("Placement.Base.y", "0")
+base_sketch.setExpression("Placement.Base.z", "0")
+base_sketch.addGeometry(Part.LineSegment(App.Vector(0, 0, 0), App.Vector(80, 0, 0)))
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 0, 1, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 0, 1, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")  # line 0 start
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 0, 2, 80))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.width")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 0, 2, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")  # line 0 end
+base_sketch.addGeometry(Part.LineSegment(App.Vector(80, 0, 0), App.Vector(80, 40, 0)))
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 1, 1, 80))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.width")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 1, 1, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")  # line 1 start
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 1, 2, 80))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.width")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 1, 2, 40))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.depth")  # line 1 end
+base_sketch.addGeometry(Part.LineSegment(App.Vector(80, 40, 0), App.Vector(0, 40, 0)))
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 2, 1, 80))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.width")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 2, 1, 40))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.depth")  # line 2 start
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 2, 2, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 2, 2, 40))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.depth")  # line 2 end
+base_sketch.addGeometry(Part.LineSegment(App.Vector(0, 40, 0), App.Vector(0, 0, 0)))
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 3, 1, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 3, 1, 40))
+base_sketch.setExpression("Constraints[%d]" % c, "Params.depth")  # line 3 start
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 3, 2, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")
+c = base_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 3, 2, 0))
+base_sketch.setExpression("Constraints[%d]" % c, "0")  # line 3 end
+base = doc.addObject("Part::Extrusion", "base")
+base.Base = base_sketch
+base.DirMode = "Normal"
+base.Solid = True
+base.Symmetric = False
+base.Reversed = False
+base.setExpression("LengthFwd", "Params.thickness")
 
-boss = doc.addObject("Part::Cylinder", "boss")
-boss.setExpression("Radius", "Params.boss_r")
-boss.setExpression("Height", "Params.boss_h")
-boss.setExpression("Placement.Base.x", "Params.width / 2")
-boss.setExpression("Placement.Base.y", "Params.depth / 2")
-boss.setExpression("Placement.Base.z", "Params.thickness")
+# corners
+doc.recompute()
+corners = doc.addObject("Part::Fillet", "corners")
+corners.Base = base
+corners.Edges = [(i, 4, 4) for i in pick_edges(base.Shape, "vertical")]
+
+# boss
+boss_sketch = doc.addObject("Sketcher::SketchObject", "boss_sketch")
+boss_sketch.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(1, 0, 0), App.Vector(0, 1, 0), App.Vector(0, 0, 1), "ZXY"))
+boss_sketch.setExpression("Placement.Base.x", "0")
+boss_sketch.setExpression("Placement.Base.y", "0")
+boss_sketch.setExpression("Placement.Base.z", "Params.thickness")
+boss_sketch.addGeometry(Part.Circle(App.Vector(40, 20, 0), App.Vector(0, 0, 1), 12))
+c = boss_sketch.addConstraint(Sketcher.Constraint("DistanceX", -1, 1, 0, 3, 40))
+boss_sketch.setExpression("Constraints[%d]" % c, "Params.width / 2")
+c = boss_sketch.addConstraint(Sketcher.Constraint("DistanceY", -1, 1, 0, 3, 20))
+boss_sketch.setExpression("Constraints[%d]" % c, "Params.depth / 2")  # centre
+c = boss_sketch.addConstraint(Sketcher.Constraint("Radius", 0, 12))
+boss_sketch.setExpression("Constraints[%d]" % c, "Params.boss_r")
+boss = doc.addObject("Part::Extrusion", "boss")
+boss.Base = boss_sketch
+boss.DirMode = "Normal"
+boss.Solid = True
+boss.Symmetric = False
+boss.Reversed = False
+boss.setExpression("LengthFwd", "Params.boss_h")
 fuse_boss = doc.addObject("Part::Fuse", "fuse_boss")
-fuse_boss.Base = base
+fuse_boss.Base = corners
 fuse_boss.Tool = boss
 
-hole = doc.addObject("Part::Cylinder", "hole")
-hole.setExpression("Radius", "Params.hole_r")
-hole.setExpression("Height", "Params.thickness + Params.boss_h")
-hole.setExpression("Placement.Base.x", "Params.width / 2")
-hole.setExpression("Placement.Base.y", "Params.depth / 2")
-hole.setExpression("Placement.Base.z", "0")
-cut_hole = doc.addObject("Part::Cut", "cut_hole")
-cut_hole.Base = fuse_boss
-cut_hole.Tool = hole
+# bore
+bore_0 = doc.addObject("Part::Cylinder", "bore_0")
+bore_0.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(0, 0, 1), App.Vector(0, 0, 1)))
+bore_0.setExpression("Radius", "Params.hole_d / 2")
+bore_0.setExpression("Height", "Params.thickness + Params.boss_h + 0.0001")
+bore_0.setExpression("Placement.Base.x", "Params.width / 2")
+bore_0.setExpression("Placement.Base.y", "Params.depth / 2")
+bore_0.setExpression("Placement.Base.z", "Params.thickness + Params.boss_h - (Params.thickness + Params.boss_h)")
+bore = doc.addObject("Part::MultiFuse", "bore")
+bore.Shapes = [bore_0]
+cut_bore = doc.addObject("Part::Cut", "cut_bore")
+cut_bore.Base = fuse_boss
+cut_bore.Tool = bore
 
-slot_l = doc.addObject("Part::Cylinder", "slot_l")
-slot_l.setExpression("Radius", "Params.thickness / 2")
-slot_l.setExpression("Height", "Params.thickness")
-slot_l.setExpression("Placement.Base.x", "Params.thickness * 1.5")
-slot_l.setExpression("Placement.Base.y", "Params.depth / 2")
-slot_l.setExpression("Placement.Base.z", "0")
-cut_slot_l = doc.addObject("Part::Cut", "cut_slot_l")
-cut_slot_l.Base = cut_hole
-cut_slot_l.Tool = slot_l
+# mount
+mount_0 = doc.addObject("Part::Cylinder", "mount_0")
+mount_0.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(0, 0, 1), App.Vector(0, 0, 1)))
+mount_0.setExpression("Radius", "6.6 / 2")
+mount_0.setExpression("Height", "Params.thickness + 0.0001")
+mount_0.setExpression("Placement.Base.x", "Params.thickness * 1.5")
+mount_0.setExpression("Placement.Base.y", "Params.depth / 2")
+mount_0.setExpression("Placement.Base.z", "Params.thickness - Params.thickness")
+mount_0_head = doc.addObject("Part::Cylinder", "mount_0_head")
+mount_0_head.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(0, 0, 1), App.Vector(0, 0, 1)))
+mount_0_head.setExpression("Radius", "11 / 2")
+mount_0_head.setExpression("Height", "3 + 0.0001")
+mount_0_head.setExpression("Placement.Base.x", "Params.thickness * 1.5")
+mount_0_head.setExpression("Placement.Base.y", "Params.depth / 2")
+mount_0_head.setExpression("Placement.Base.z", "Params.thickness - 3")
+mount_1 = doc.addObject("Part::Cylinder", "mount_1")
+mount_1.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(0, 0, 1), App.Vector(0, 0, 1)))
+mount_1.setExpression("Radius", "6.6 / 2")
+mount_1.setExpression("Height", "Params.thickness + 0.0001")
+mount_1.setExpression("Placement.Base.x", "Params.width - Params.thickness * 1.5")
+mount_1.setExpression("Placement.Base.y", "Params.depth / 2")
+mount_1.setExpression("Placement.Base.z", "Params.thickness - Params.thickness")
+mount_1_head = doc.addObject("Part::Cylinder", "mount_1_head")
+mount_1_head.Placement = App.Placement(App.Vector(0, 0, 0), App.Rotation(App.Vector(0, 0, 1), App.Vector(0, 0, 1)))
+mount_1_head.setExpression("Radius", "11 / 2")
+mount_1_head.setExpression("Height", "3 + 0.0001")
+mount_1_head.setExpression("Placement.Base.x", "Params.width - Params.thickness * 1.5")
+mount_1_head.setExpression("Placement.Base.y", "Params.depth / 2")
+mount_1_head.setExpression("Placement.Base.z", "Params.thickness - 3")
+mount = doc.addObject("Part::MultiFuse", "mount")
+mount.Shapes = [mount_0, mount_0_head, mount_1, mount_1_head]
+cut_mount = doc.addObject("Part::Cut", "cut_mount")
+cut_mount.Base = cut_bore
+cut_mount.Tool = mount
 
-slot_r = doc.addObject("Part::Cylinder", "slot_r")
-slot_r.setExpression("Radius", "Params.thickness / 2")
-slot_r.setExpression("Height", "Params.thickness")
-slot_r.setExpression("Placement.Base.x", "Params.width - Params.thickness * 1.5")
-slot_r.setExpression("Placement.Base.y", "Params.depth / 2")
-slot_r.setExpression("Placement.Base.z", "0")
-cut_slot_r = doc.addObject("Part::Cut", "cut_slot_r")
-cut_slot_r.Base = cut_slot_l
-cut_slot_r.Tool = slot_r
-
-cut_slot_r.Label = "bracket"
+cut_mount.Label = "bracket"
 doc.recompute()
 if App.GuiUp:
     import FreeCADGui

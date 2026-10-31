@@ -3,6 +3,8 @@
 
 import adsk.core, adsk.fusion, traceback
 
+FRAMES = {"XY": ((1, 0, 0), (0, 1, 0), (0, 0, 1)), "XZ": ((1, 0, 0), (0, 0, 1), (0, -1, 0)), "YZ": ((0, 1, 0), (0, 0, 1), (1, 0, 0))}
+
 
 def run(context):
     ui = None
@@ -16,6 +18,8 @@ def run(context):
         V = adsk.core.ValueInput.createByString
         P = adsk.core.Point3D.create
         ops = adsk.fusion.FeatureOperations
+        Dir = adsk.fusion.ExtentDirections
+        bases = {'XY': root.xYConstructionPlane, 'XZ': root.xZConstructionPlane, 'YZ': root.yZConstructionPlane}
 
         def param(name, expr, note):
             existing = up.itemByName(name)
@@ -24,58 +28,92 @@ def run(context):
             else:
                 up.add(name, V(expr), "mm", note)
 
+        def sketch_on(base, offset_expr):
+            # Fusion's base planes may face the other way from ShapeBridge's; flip the offset to match
+            n = FRAMES[base][2]
+            fn = bases[base].geometry.normal
+            sign = '' if fn.x * n[0] + fn.y * n[1] + fn.z * n[2] > 0 else '-'
+            pi = root.constructionPlanes.createInput()
+            pi.setByOffset(bases[base], V(sign + '(' + offset_expr + ')'))
+            sk = root.sketches.add(root.constructionPlanes.add(pi))
+            same = sk.xDirection.crossProduct(sk.yDirection).dotProduct(adsk.core.Vector3D.create(*n)) > 0
+            return sk, same
+
+        def to_sketch(sk, world):
+            return sk.modelToSketchSpace(P(*world))
+
+        def poly(sk, pts):
+            lines = sk.sketchCurves.sketchLines
+            ps = [to_sketch(sk, p) for p in pts]
+            for i in range(len(ps)):
+                lines.addByTwoPoints(ps[i], ps[(i + 1) % len(ps)])
+
+        def pick_edges(body, sel):
+            edges = adsk.core.ObjectCollection.create()
+            box = body.boundingBox
+            for e in body.edges:
+                ok = sel == 'all'
+                if sel == 'vertical':
+                    g = e.geometry
+                    ok = isinstance(g, adsk.core.Line3D) and abs(abs(g.startPoint.vectorTo(g.endPoint).z) - g.startPoint.distanceTo(g.endPoint)) < 1e-6
+                elif sel in ('top', 'bottom'):
+                    z = box.maxPoint.z if sel == 'top' else box.minPoint.z
+                    ok = abs(e.boundingBox.minPoint.z - z) < 1e-3 and abs(e.boundingBox.maxPoint.z - z) < 1e-3
+                if ok:
+                    edges.add(e)
+            return edges
+
         param("width", "80 mm", "overall length")
         param("depth", "40 mm", "")
         param("thickness", "8 mm", "")
         param("boss_r", "12 mm", "")
         param("boss_h", "thickness * 2", "")
-        param("hole_r", "boss_r / 2", "")
+        param("hole_d", "boss_r", "")
+        param("corner_r", "4 mm", "")
+        body = None
 
         # base
-        pi = root.constructionPlanes.createInput()
-        pi.setByOffset(root.xYConstructionPlane, V("0"))
-        sk = root.sketches.add(root.constructionPlanes.add(pi))
-        dims = sk.sketchDimensions
-        rect = sk.sketchCurves.sketchLines.addTwoPointRectangle(P(0, 0, 0), P(8, 4, 0))
-        dims.addDistanceDimension(rect.item(0).startSketchPoint, rect.item(0).endSketchPoint, adsk.fusion.DimensionOrientations.HorizontalDimensionOrientation, P(4, -0.5, 0)).parameter.expression = "width"
-        dims.addDistanceDimension(rect.item(1).startSketchPoint, rect.item(1).endSketchPoint, adsk.fusion.DimensionOrientations.VerticalDimensionOrientation, P(8.5, 2, 0)).parameter.expression = "depth"
-        root.features.extrudeFeatures.addSimple(sk.profiles.item(0), V("thickness"), ops.NewBodyFeatureOperation)
+        sk, same = sketch_on("XY", "0")
+        poly(sk, [(0, 0, 0), (8, 0, 0), (8, 4, 0), (0, 4, 0)])
+        inp = root.features.extrudeFeatures.createInput(sk.profiles.item(0), ops.NewBodyFeatureOperation if body is None else ops.JoinFeatureOperation)
+        inp.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(V("(abs(thickness)) * 1 mm")), Dir.PositiveExtentDirection if same == (True) else Dir.NegativeExtentDirection)
+        base = root.features.extrudeFeatures.add(inp)
+        body = body or root.bRepBodies.item(0)
+
+        # corners
+        inp = root.features.filletFeatures.createInput()
+        inp.edgeSetInputs.addConstantRadiusEdgeSet(pick_edges(body, "vertical"), V("(corner_r) * 1 mm"), True)
+        corners = root.features.filletFeatures.add(inp)
+        body = body or root.bRepBodies.item(0)
 
         # boss
-        pi = root.constructionPlanes.createInput()
-        pi.setByOffset(root.xYConstructionPlane, V("thickness"))
-        sk = root.sketches.add(root.constructionPlanes.add(pi))
-        dims = sk.sketchDimensions
-        c = sk.sketchCurves.sketchCircles.addByCenterRadius(P(4, 2, 0), 1.2)
-        dims.addDiameterDimension(c, P(5.2, 3.2, 0)).parameter.expression = "(boss_r) * 2"
-        root.features.extrudeFeatures.addSimple(sk.profiles.item(0), V("boss_h"), ops.JoinFeatureOperation)
+        sk, same = sketch_on("XY", "thickness")
+        sk.sketchCurves.sketchCircles.addByCenterRadius(to_sketch(sk, (4, 2, 0.8)), 1.2)
+        inp = root.features.extrudeFeatures.createInput(sk.profiles.item(0), ops.NewBodyFeatureOperation if body is None else ops.JoinFeatureOperation)
+        inp.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(V("(abs(boss_h)) * 1 mm")), Dir.PositiveExtentDirection if same == (True) else Dir.NegativeExtentDirection)
+        boss = root.features.extrudeFeatures.add(inp)
+        body = body or root.bRepBodies.item(0)
 
-        # hole
-        pi = root.constructionPlanes.createInput()
-        pi.setByOffset(root.xYConstructionPlane, V("0"))
-        sk = root.sketches.add(root.constructionPlanes.add(pi))
-        dims = sk.sketchDimensions
-        c = sk.sketchCurves.sketchCircles.addByCenterRadius(P(4, 2, 0), 0.6)
-        dims.addDiameterDimension(c, P(4.6, 2.6, 0)).parameter.expression = "(hole_r) * 2"
-        root.features.extrudeFeatures.addSimple(sk.profiles.item(0), V("thickness + boss_h"), ops.CutFeatureOperation)
+        # bore
+        sk, same = sketch_on("XY", "thickness + boss_h")
+        pts = adsk.core.ObjectCollection.create()
+        pts.add(sk.sketchPoints.add(to_sketch(sk, (4, 2, 2.4))))
+        inp = root.features.holeFeatures.createSimpleInput(V("(hole_d) * 1 mm"))
+        inp.setPositionBySketchPoints(pts)
+        inp.setDistanceExtent(V("(thickness + boss_h) * 1 mm"))
+        bore = root.features.holeFeatures.add(inp)
+        body = body or root.bRepBodies.item(0)
 
-        # slot_l
-        pi = root.constructionPlanes.createInput()
-        pi.setByOffset(root.xYConstructionPlane, V("0"))
-        sk = root.sketches.add(root.constructionPlanes.add(pi))
-        dims = sk.sketchDimensions
-        c = sk.sketchCurves.sketchCircles.addByCenterRadius(P(1.2, 2, 0), 0.4)
-        dims.addDiameterDimension(c, P(1.6, 2.4, 0)).parameter.expression = "(thickness / 2) * 2"
-        root.features.extrudeFeatures.addSimple(sk.profiles.item(0), V("thickness"), ops.CutFeatureOperation)
-
-        # slot_r
-        pi = root.constructionPlanes.createInput()
-        pi.setByOffset(root.xYConstructionPlane, V("0"))
-        sk = root.sketches.add(root.constructionPlanes.add(pi))
-        dims = sk.sketchDimensions
-        c = sk.sketchCurves.sketchCircles.addByCenterRadius(P(6.8, 2, 0), 0.4)
-        dims.addDiameterDimension(c, P(7.2, 2.4, 0)).parameter.expression = "(thickness / 2) * 2"
-        root.features.extrudeFeatures.addSimple(sk.profiles.item(0), V("thickness"), ops.CutFeatureOperation)
+        # mount
+        sk, same = sketch_on("XY", "thickness")
+        pts = adsk.core.ObjectCollection.create()
+        pts.add(sk.sketchPoints.add(to_sketch(sk, (1.2, 2, 0.8))))
+        pts.add(sk.sketchPoints.add(to_sketch(sk, (6.8, 2, 0.8))))
+        inp = root.features.holeFeatures.createCounterboreInput(V("(6.6) * 1 mm"), V("(11) * 1 mm"), V("(3) * 1 mm"))
+        inp.setPositionBySketchPoints(pts)
+        inp.setDistanceExtent(V("(thickness) * 1 mm"))
+        mount = root.features.holeFeatures.add(inp)
+        body = body or root.bRepBodies.item(0)
 
     except:
         if ui:
