@@ -104,7 +104,7 @@ function DesignLibrary() {
           {([file, note]) => (
             <button onClick={() => c.openSample(file)}>
               <Icon name="part" size={22} />
-              <b>{file}</b>
+              <b class="file-name">{file}</b>
               <span>{note}</span>
             </button>
           )}
