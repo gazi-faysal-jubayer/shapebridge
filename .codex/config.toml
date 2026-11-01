@@ -1,0 +1,9 @@
+# Project MCP servers for Codex (same as .mcp.json). REA is required in this repo; see AGENTS.md.
+[mcp_servers.rea]
+command = "npx"
+args = ["-y", "rea-agents@6.5.0", "mcp"]
+
+# drives the real Windows app started by `npm run check:desktop` (WebView2 debugging port 9222)
+[mcp_servers.desktop]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest", "--cdp-endpoint", "http://127.0.0.1:9222"]

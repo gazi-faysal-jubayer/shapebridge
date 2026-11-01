@@ -6,6 +6,23 @@ Applies to Claude Code, Codex, Cursor, Copilot, Gemini CLI and any other agent w
 
 ShapeBridge is a lightweight, open-source CAD viewer, converter and parametric designer. A SolidJS + TypeScript frontend (Vite) runs in a Tauri 2 desktop shell and also as a web app. Viewing and mesh export use the Online 3D Viewer engine. Parametric parts are built with OpenCascade WASM (replicad) in a worker. Live sharing is WebRTC peer-to-peer (Trystero). Layout and data flow: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Priorities
+
+1. **Desktop apps first: Windows, then Linux, then macOS.** They are the product. Check every change in the Windows app before anything else.
+2. **Web app last.** The same frontend also runs in a browser. Keep it working, but check it after the desktop apps.
+
+## Before you start: REA
+
+Every agent in this repo uses [REA](https://github.com/morluto/rea). Run `node scripts/hooks/ensure-rea.mjs` first; it installs REA when it is missing (Claude Code runs it for you at session start). The `rea` MCP server is configured for Claude Code (`.mcp.json`), Cursor (`.cursor/mcp.json`), Gemini CLI (`.gemini/settings.json`), Copilot in VS Code (`.vscode/mcp.json`) and Codex (`.codex/config.toml`).
+
+Use it on **our own** artifacts and open-source dependencies only:
+
+- after a build: `analyze_javascript_application` on `dist/` (chunks, lazy loading, size budget), and `binary_overview` / `inspect_pe_resources` on the built `shapebridge.exe` (icon, version info, imports)
+- when a desktop bug is hard to see from the source: inspect the installed app and its WebView2 behaviour
+- in reviews: `compare_application_versions` between `main` and the PR build
+
+Never point it at vendor CAD software or files you have no rights to analyse (clean room, below).
+
 ## Commands
 
 ```bash
@@ -16,9 +33,16 @@ npx vitest run           # unit + golden + real-OCCT kernel tests (fast)
 npx vitest run -u        # update golden files; then REVIEW the diff
 npm run e2e              # Playwright end-to-end tests (after npm run build)
 npm run build
+npm run check:desktop    # install the CI-built Windows app and check it for real (Windows)
 ```
 
-Done means typecheck, tests and build pass. CI runs the same steps (`.github/workflows/build_all.yml`).
+Done means typecheck, tests and build pass, **and the desktop app is checked**:
+
+- **Windows:** run `npm run check:desktop`. It installs the latest green CI build of your branch (or `--from nightly`), opens samples, builds a part, checks the app icon and saves a screenshot.
+- **Linux and macOS:** the CI desktop jobs launch the app on every OS.
+- **Web app:** check it last (`npm run dev`).
+
+CI runs the same steps (`.github/workflows/build_all.yml`).
 
 ## Rules
 

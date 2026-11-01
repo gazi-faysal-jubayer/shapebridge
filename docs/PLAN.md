@@ -30,7 +30,7 @@ One small, free, open-source app that every engineer can install anywhere to:
 ## 3. Constraints
 
 - **Lightweight:** installer < 20 MB, idle RAM < 150 MB, cold start < 1 s (no kernel loaded).
-- **Cross-platform:** Windows 10+, macOS 12+, mainstream Linux (AppImage/deb/rpm), plus any evergreen browser.
+- **Desktop first:** the Windows 10+, mainstream Linux (AppImage/deb/rpm) and macOS 12+ apps are the product, checked in that order. The web app (any evergreen browser) is a convenience and is checked last.
 - **Fully open source:** Apache-2.0 core. LGPL kernels loaded as replaceable modules. GPL pieces (LibreDWG) only as opt-in plugins.
 - **Privacy:** files never leave the machine except peer-to-peer to people the user explicitly shares with.
 

@@ -15,6 +15,11 @@
     "deny": ["Read(./.env)", "Read(./.env.*)"]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/hooks/ensure-rea.mjs\"", "timeout": 300 }]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",

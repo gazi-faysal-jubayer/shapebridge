@@ -16,6 +16,6 @@ description: Add or improve import/export support for a CAD or 3D file format in
    - Exact B-rep export: extend the kernel worker (`src/kernel/occt.worker.ts`) and add to `KernelResponse` in `src/kernel/protocol.ts`.
 4. **Sample + test.** Generate a tiny sample yourself (extend `scripts/make-samples.mjs`), keep it under 200 KB, list it in `public/samples/README.md`, and add a test that parses it or round-trips it.
 5. **Docs.** Update the row in `docs/FORMATS.md` and add a line to `CHANGELOG.md` under `[Unreleased]`.
-6. **Verify.** Run `npm run typecheck && npx vitest run && npm run build`. Then open the sample in `npm run dev` and export it.
+6. **Verify.** Run `npm run typecheck && npx vitest run && npm run build`. Then open the sample in the **Windows app first** (`npm run check:desktop -- --keep`, then the `desktop` MCP) and export it. Check the web app (`npm run dev`) last.
 
 PR label: `format` plus the area (`viewer` or `converter`).

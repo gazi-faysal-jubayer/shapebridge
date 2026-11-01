@@ -19,6 +19,6 @@ A feature is only done when **every** target can represent it (`docs/plans/inter
 4. **Sample:** use it in `sampleDoc` (or a second sample doc) so the golden files cover it, then run `npx vitest run -u` and **review every golden diff**.
 5. **UI:** show the feature in the Features list in `src/App.tsx`.
 6. **Docs:** update `docs/INTEROP.md` (the `.sbridge.json` schema and the targets table) and `CHANGELOG.md`.
-7. **Verify:** `npm run typecheck && npx vitest run`. Then in `npm run dev`, click _New parametric part_, edit a parameter, and check that the geometry updates.
+7. **Verify:** `npm run typecheck && npx vitest run`. Then check it in the **Windows app first**: after CI is green, run `npm run check:desktop -- --keep`, then use the `desktop` MCP to add the feature, edit a parameter and see the geometry update. Check the web app (`npm run dev`) last.
 
 PR labels: `parametric`, `interop`.

@@ -12,7 +12,7 @@ Follow the triage loop in `docs/MAINTAINING.md`. Use the `gh` CLI. **Show the us
    - `gh issue list --label "To be validated" --json number,title,labels,body --limit 30`
    - `gh pr list --json number,title,labels,author,isDraft,statusCheckRollup --limit 30`
 2. For each issue, decide one of:
-   - reproducible from the details (try it in `npm run dev` with the attached file when it's safe): remove `To be validated`, add the area label and a `priority: p0|p1|p2`, and set a milestone from `docs/PLAN.md`
+   - reproducible from the details (try it in the installed Windows app first, `npm run check:desktop -- --from nightly`, then the web app, with the attached file when it's safe): remove `To be validated`, add the area label and a `priority: p0|p1|p2`, and set a milestone from `docs/PLAN.md`
    - missing details: add `Need more information` and draft a short, specific question
    - duplicate: find the original with `gh issue list --search "<keywords>" --state all`, then draft a comment linking it and add `duplicate`
    - a proprietary format (SolidWorks and similar) asked as a reader: link `docs/FORMATS.md` Tier 4 and the matching bridge issue
