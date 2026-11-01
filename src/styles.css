@@ -1009,6 +1009,10 @@ h3 {
 .templates button b {
   text-transform: capitalize;
 }
+/* file names are shown exactly as stored */
+.templates button b.file-name {
+  text-transform: none;
+}
 .templates button span {
   font-size: 11px;
   color: var(--muted);
