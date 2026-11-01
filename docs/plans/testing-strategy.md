@@ -2,15 +2,15 @@
 
 ## Layers
 
-| Layer | Tool | What | Where |
-|---|---|---|---|
-| Unit | Vitest | expression parser/printer, doc validation, share-link parsing | `src/**/*.test.ts` |
-| Golden | Vitest `toMatchFileSnapshot` | every interop generator on the sample doc | `src/interop/__golden__/` |
-| Kernel | Vitest + real OCCT WASM in Node | build the sample, STEP header, triangle count, **volume matches the analytic value** | `src/kernel/build.test.ts` |
-| Format smoke | Vitest + OV engine in a DOM environment (M1) | each file in `public/samples/` imports with > 0 triangles | planned |
-| Target execution | CI jobs with `freecadcmd`, `openscad`, `pip install cadquery` (M5) | generated scripts run and the volume matches ours | planned |
-| E2E | Playwright (M1) | open sample, export, parameter edit, two-page share session | planned |
-| Desktop smoke | tauri-action build + `tauri-driver` (M6) | app launches and opens a file from argv | planned |
+| Layer            | Tool                                                                                | What                                                                                       | Where                        |
+| ---------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------- |
+| Unit             | Vitest                                                                              | expression parser/printer, doc validation, share-link parsing                              | `src/**/*.test.ts`           |
+| Golden           | Vitest `toMatchFileSnapshot`                                                        | every interop generator on the sample doc                                                  | `src/interop/__golden__/`    |
+| Kernel           | Vitest + real OCCT WASM in Node                                                     | build the sample, STEP header, triangle count, **volume matches the analytic value**       | `src/kernel/build.test.ts`   |
+| Format smoke     | Vitest + OV's importer (with a tiny `FileReader` shim) and `occt-import-js` in Node | each file in `public/samples/` imports with > 0 triangles; a sample without a reader fails | `src/viewer/samples.test.ts` |
+| Target execution | CI jobs with `freecadcmd`, `openscad`, `pip install cadquery` (M5)                  | generated scripts run and the volume matches ours                                          | planned                      |
+| E2E              | Playwright against `npm run preview` (CI job `E2E · Playwright`)                    | open sample, export STL, parameter edit + undo, two-browser live share (`@network`)        | `e2e/` (`npm run e2e`)       |
+| Desktop smoke    | tauri-action build + `tauri-driver` (M6)                                            | app launches and opens a file from argv                                                    | planned                      |
 
 ## Rules
 

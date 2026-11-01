@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { defineConfig, type Plugin } from "vitest/config";
+import { configDefaults, defineConfig, type Plugin } from "vitest/config";
 import solid from "vite-plugin-solid";
 
 // One policy for web and desktop (the Tauri config leaves CSP to this meta tag), so it is testable in a browser.
@@ -74,7 +74,8 @@ export default defineConfig({
   server: { port: 1420, strictPort: true },
   preview: { port: 4173 },
   build: { target: "es2022", chunkSizeWarningLimit: 1500 },
-  test: { environment: "node" },
+  // e2e/ holds Playwright specs, run by `npm run e2e`
+  test: { environment: "node", exclude: [...configDefaults.exclude, "e2e/**"] },
   // OV must go through the transform above rather than Vite's pre-bundling cache
   optimizeDeps: { exclude: ["online-3d-viewer"] },
 });

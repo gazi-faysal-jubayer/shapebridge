@@ -1,3 +1,4 @@
+import { filesFromDrop, listenForOpenRequests } from "./platform/open";
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { Tabs } from "@kobalte/core/tabs";
 import { persistSettings, setState, state } from "./state/store";
@@ -72,6 +73,7 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     onCleanup(() => window.removeEventListener("keydown", onKey));
     await c.mountViewer(viewport);
+    void listenForOpenRequests();
     if (guest) joinShare(guest);
     // a different share link pasted into an open tab must join that room, not keep the old one
     const onHash = () => parseShareHash(location.hash) && location.reload();
@@ -82,7 +84,7 @@ export default function App() {
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    if (!guest) c.openFiles([...(e.dataTransfer?.files ?? [])]);
+    if (!guest && e.dataTransfer) void filesFromDrop(e.dataTransfer).then(c.openFiles);
   };
 
   return (

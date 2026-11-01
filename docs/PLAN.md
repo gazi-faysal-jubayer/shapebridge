@@ -64,19 +64,20 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 - [x] Thin vertical slice: open → view → export mesh; parametric sample → STEP and 5 interop targets; live P2P share
 - [x] Dependency audit in CI: `npm audit` (runtime, high+) and `cargo audit` (#2)
 - [x] Desktop launch smoke test on Windows, macOS arm64/x64 and Linux in CI, with a screenshot artifact (#4)
+- [x] Format smoke tests for every sample (#15) and Playwright end-to-end tests in CI (#16)
 
 ### M1 Viewer (v0.2)
 
 - [x] Model tree panel (assemblies, names, colours, visibility toggles) · M
 - [x] Measure: point-to-point distance, angle and parallel-face distance, bounding box · M
-- [x] Section plane (stencil cap is a follow-up) · M
+- [x] Section plane with solid stencil caps per part (#69) · M
 - [x] View cube / standard views, ortho/perspective toggle, Z-up/Y-up toggle · S
 - [x] Wireframe / shaded / shaded+edges / x-ray modes · S
 - [x] Exploded view, saved views, screenshots, command palette, shortcuts, themes · M
 - [ ] **Offline readers:** vendor occt-import-js, rhino3dm, web-ifc into the desktop bundle with a CDN fallback · M (converter PR)
-- [ ] OS file associations + "Open with" + open from CLI args (Rust side) · M
-- [x] Multi-file open (OBJ+MTL+textures) · S — [ ] recent files (desktop)
-- [~] Large-model performance: BVH picking and lazy engine done; worker-side import, 5M-triangle target open · L
+- [x] OS file associations + "Open with" + open from CLI args, single instance (#12) · M
+- [x] Multi-file open (OBJ+MTL+textures), folder drop, recent files on desktop (#13) · S
+- [x] Large-model performance: worker import + lean STL path, worker-built BVH; a 5M-triangle STL opens without blocking the UI (#14) · L
 
 ### M1c Workspace (v0.2)
 
@@ -85,7 +86,7 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 - [x] Feature panel with OK / Cancel (#75) · S
 - [x] Heads-up view toolbar (#76), original icon set (#77), triad and editing context (#80) · M
 - [x] Viewport right-click menu (#79) — [ ] context toolbar near the cursor · S
-- [x] Task pane: Properties, Review, Design library (#78) — [ ] recent files · S
+- [x] Task pane: Properties, Review, Design library with recent files (#78) · S
 - [ ] Drag to reorder in the tree (move up/down from the right-click menu for now) · S
 
 ### M1b Formats (v0.3)

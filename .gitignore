@@ -7,3 +7,7 @@ src-tauri/gen/
 .claude/settings.local.json
 dist-cli/
 desktop-check/
+public/_perf/
+# Playwright output
+playwright-report/
+test-results/
