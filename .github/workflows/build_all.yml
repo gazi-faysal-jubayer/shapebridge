@@ -93,20 +93,36 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: Windows x64, os: windows-latest, args: "", artifact: ShapeBridge-Windows-x64, bin: target/release/shapebridge.exe }
+          - {
+              name: Windows x64,
+              os: windows-latest,
+              args: "",
+              artifact: ShapeBridge-Windows-x64,
+              bin: target/release/shapebridge.exe,
+              target: x86_64-pc-windows-msvc,
+            }
           - name: macOS arm64
             os: macos-latest
             args: "--target aarch64-apple-darwin"
             artifact: ShapeBridge-macOS-arm64
+            target: aarch64-apple-darwin
             bin: target/aarch64-apple-darwin/release/shapebridge
           - name: macOS x64
             os: macos-latest
             args: "--target x86_64-apple-darwin"
             artifact: ShapeBridge-macOS-x64
+            target: x86_64-apple-darwin
             bin: target/x86_64-apple-darwin/release/shapebridge
-          - { name: Linux x64, os: ubuntu-22.04, args: "", artifact: ShapeBridge-Linux-x64, bin: target/release/shapebridge }
+          - {
+              name: Linux x64,
+              os: ubuntu-22.04,
+              args: "",
+              artifact: ShapeBridge-Linux-x64,
+              bin: target/release/shapebridge,
+              target: x86_64-unknown-linux-gnu,
+            }
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -124,8 +140,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb imagemagick
       - run: npm ci
+      # native STEP/IGES/BREP reader (OpenCascade, LGPL) as a sidecar; OCCT itself is built once per target and cached
+      - name: Restore the OpenCascade build
+        id: occt-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .occt/install-${{ matrix.target }}
+          key: occt-7.8.1-${{ matrix.target }}-${{ hashFiles('scripts/build-occt.mjs') }}
+      - name: Build the native reader
+        shell: bash
+        run: node scripts/build-occt.mjs --target ${{ matrix.target }}
+      - name: Save the OpenCascade build
+        if: steps.occt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .occt/install-${{ matrix.target }}
+          key: ${{ steps.occt-cache.outputs.cache-primary-key }}
       - name: Build installers
-        run: npx tauri build --ci ${{ matrix.args }}
+        run: npx tauri build --ci --config src-tauri/tauri.native.conf.json ${{ matrix.args }}
       # launch the built app and check it stays up; the screenshot is uploaded with the installers
       - name: Rosetta for the Intel build
         if: matrix.artifact == 'ShapeBridge-macOS-x64'

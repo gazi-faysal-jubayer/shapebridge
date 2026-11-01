@@ -35,6 +35,38 @@ Parse times come from Node (the same `parseStl` code the worker runs). Main-thre
 
 Next: the same lean path for very large OBJ and PLY files.
 
+## Large STEP assemblies on the desktop
+
+Measured 2026-11-01 in the **installed Windows app** on the same i5-10500 (12 threads), with `npm run check:desktop -- --from installed --bench <file>`.
+
+- The test assemblies come from `node scripts/make-big-assembly.mjs <plates> <out>`: drilled plates with four bolts each.
+- _Open_ is from app start to "Opened".
+- _Peak memory_ is the sum of the peak working sets of `shapebridge.exe` and its WebView2 processes.
+
+| Assembly             | Reader                 | Open       | Longest main-thread task | Orbit  | Peak memory |
+| -------------------- | ---------------------- | ---------- | ------------------------ | ------ | ----------- |
+| 1,000 parts, 18.5 MB | built-in (WebAssembly) | 16.3 s     | 0.98 s                   | — ¹    | 1.16 GB     |
+| 1,000 parts, 18.5 MB | **native OpenCascade** | **9.0 s**  | 0.95 s                   | 60 fps | 1.18 GB     |
+| 2,500 parts, 46.8 MB | built-in (WebAssembly) | 45.0 s     | 2.79 s                   | — ¹    | 2.22 GB     |
+| 2,500 parts, 46.8 MB | **native OpenCascade** | **23.4 s** | 2.58 s                   | 45 fps | 2.18 GB     |
+
+¹ Not comparable: before this change, the camera's far plane stayed at 1 m, so most of these assemblies was never drawn (see below).
+
+**What changed:**
+
+- **Native reader.** On the desktop, STEP, IGES and BREP go through `shapebridge-occt` (`native/occt-import/`), a separate OpenCascade 7.8 program.
+  - It meshes parts in parallel and writes glTF that keeps the tree, names and colours.
+  - On the 2,500-part file it spends 3.8 s parsing, 8.8 s transferring, 2.1 s meshing and 0.4 s writing. WebAssembly needs 42.5 s for the same work.
+  - The remaining time is OV's glTF import on the main thread.
+- **Far plane.** OV's low-level `Viewer` sizes the camera's clip planes only when the projection changes. Every model kept a 1 m far plane, so assemblies bigger than about a metre were cut off. The engine now fits the planes to each model.
+  - `e2e/viewer.spec.ts` checks this with a 3 m beam.
+  - The desktop check's bench also fails a model that loads but doesn't draw.
+
+**Next:**
+
+- Split the XCAF transfer (8.8 s, single-threaded) across processes.
+- Show the glTF without OV's per-vertex model (the 2.6 s task and most of the memory), as #296 did for STL.
+
 ## Rules
 
 - Any new runtime dependency states its gzip size in the PR. Anything over 30 KB must be lazy-loaded.

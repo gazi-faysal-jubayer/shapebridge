@@ -6,6 +6,10 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Desktop: STEP, IGES and BREP files are read by native, multi-threaded OpenCascade (a separate `shapebridge-occt` program). A 2,500-part assembly opens in 23 s instead of 45 s. The Properties panel shows which reader opened a file.
+- Opening a SolidWorks, Inventor, CATIA, Fusion 360 or NX/Creo native file explains how to export a STEP instead of "No importable file found", and such files no longer stay in Recent.
+- `npm run check:desktop -- --bench <file>` measures open time, main-thread stalls, orbit frame rate and peak memory in the installed app. `scripts/make-big-assembly.mjs` writes test assemblies.
+
 - **New Part** (Ctrl+N) starts an empty part that shows only its Front, Top and Right planes, ready for the first sketch or feature. Before, it opened the bracket template.
 - `npm run check:desktop -- --from local` builds the Windows app from your checkout, installs it and checks it, including New Part.
 
@@ -35,6 +39,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Fixed
 
+- Models bigger than about a metre were cut off or vanished: the camera's far plane stayed at 1 m. Big assemblies now draw completely.
 - A reader that crashes inside its own code now fails the load with a message instead of leaving "Loading…" forever.
 
 - Live review:
