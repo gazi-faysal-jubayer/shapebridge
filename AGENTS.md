@@ -14,6 +14,7 @@ npm run dev              # http://localhost:1420
 npm run typecheck
 npx vitest run           # unit + golden + real-OCCT kernel tests (fast)
 npx vitest run -u        # update golden files; then REVIEW the diff
+npm run e2e              # Playwright end-to-end tests (after npm run build)
 npm run build
 ```
 

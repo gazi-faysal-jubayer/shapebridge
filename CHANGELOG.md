@@ -10,6 +10,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 - Very large STL files (over 20 MB) load in a background worker without freezing the window. A 5M-triangle mesh, which used to crash the app, now opens (parsed in 0.6 s), with exact size, area and volume.
 - Desktop: double-clicking a CAD file or "Open with" opens it in ShapeBridge, and a second file goes to the window that is already running. The native Open dialog and a recent-files list (File → Open recent, the start screen, the Design library).
 - Dropping a folder opens everything in it.
+- Tests: every sample file must import with triangles (Vitest), plus Playwright end-to-end tests in CI covering opening, STL export, parameter edit with undo, and a two-browser live share.
 - CI: a dependency audit (`npm audit` for runtime packages, `cargo audit` for the desktop shell) and a launch smoke test that starts every desktop build and saves a screenshot.
 - CAD-style workspace:
   - a ribbon command bar (Features, Sketch, Evaluate, Review, View, Convert) with an original icon set
