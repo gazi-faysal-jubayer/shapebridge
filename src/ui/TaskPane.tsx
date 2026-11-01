@@ -8,6 +8,7 @@ import { Properties } from "./Properties";
 import { ReviewPanel } from "./ReviewPanel";
 import { Icon } from "./icons";
 import * as c from "../controller";
+import { openPaths, recent } from "../platform/open";
 
 const PANES = [
   { id: "props", label: "Properties", icon: () => <Info size={18} /> },
@@ -75,6 +76,20 @@ function DesignLibrary() {
           )}
         </For>
       </div>
+      <Show when={recent().length}>
+        <h3>Recent files</h3>
+        <div class="templates">
+          <For each={recent()}>
+            {(p) => (
+              <button onClick={() => void openPaths([p])} title={p}>
+                <Icon name="open" size={22} />
+                <b>{p.split(/[\/]/).pop()}</b>
+                <span>{p}</span>
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
       <h3>Sample files</h3>
       <div class="templates">
         <For
