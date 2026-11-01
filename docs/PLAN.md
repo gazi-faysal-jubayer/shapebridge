@@ -69,14 +69,14 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 
 - [x] Model tree panel (assemblies, names, colours, visibility toggles) · M
 - [x] Measure: point-to-point distance, angle and parallel-face distance, bounding box · M
-- [x] Section plane (stencil cap is a follow-up) · M
+- [x] Section plane with solid stencil caps per part (#69) · M
 - [x] View cube / standard views, ortho/perspective toggle, Z-up/Y-up toggle · S
 - [x] Wireframe / shaded / shaded+edges / x-ray modes · S
 - [x] Exploded view, saved views, screenshots, command palette, shortcuts, themes · M
 - [ ] **Offline readers:** vendor occt-import-js, rhino3dm, web-ifc into the desktop bundle with a CDN fallback · M (converter PR)
 - [ ] OS file associations + "Open with" + open from CLI args (Rust side) · M
 - [x] Multi-file open (OBJ+MTL+textures) · S — [ ] recent files (desktop)
-- [~] Large-model performance: BVH picking and lazy engine done; worker-side import, 5M-triangle target open · L
+- [x] Large-model performance: worker import + lean STL path, worker-built BVH; a 5M-triangle STL opens without blocking the UI (#14) · L
 
 ### M1c Workspace (v0.2)
 

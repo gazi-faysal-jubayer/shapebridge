@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Section views now fill the cut with a solid cap in each part's colour, instead of showing hollow inner faces.
+- Very large STL files (over 20 MB) load in a background worker without freezing the window. A 5M-triangle mesh, which used to crash the app, now opens (parsed in 0.6 s), with exact size, area and volume.
 - CI: a dependency audit (`npm audit` for runtime packages, `cargo audit` for the desktop shell) and a launch smoke test that starts every desktop build and saves a screenshot.
 - CAD-style workspace:
   - a ribbon command bar (Features, Sketch, Evaluate, Review, View, Convert) with an original icon set
