@@ -6,6 +6,13 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- **New Part** (Ctrl+N) starts an empty part that shows only its Front, Top and Right planes, ready for the first sketch or feature. Before, it opened the bracket template.
+- `npm run check:desktop -- --from local` builds the Windows app from your checkout, installs it and checks it, including New Part.
+
+### Changed
+
+- Command names now read like a CAD application: New Part, Open…, Save Part, Recover Autosaved Part, New from Template, Convert & Export…, Export with Parameters.
+
 - Section views now fill the cut with a solid cap in each part's colour, instead of showing hollow inner faces.
 - Very large STL files (over 20 MB) load in a background worker without freezing the window. A 5M-triangle mesh, which used to crash the app, now opens (parsed in 0.6 s), with exact size, area and volume.
 - Desktop: double-clicking a CAD file or "Open with" opens it in ShapeBridge, and a second file goes to the window that is already running. The native Open dialog and a recent-files list (File → Open recent, the start screen, the Design library).

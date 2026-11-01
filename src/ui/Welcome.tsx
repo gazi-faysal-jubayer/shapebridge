@@ -18,8 +18,8 @@ export function Welcome() {
         <button class="primary big" onClick={() => void pickAndOpen()}>
           <FolderOpen size={18} /> Open file…
         </button>
-        <button class="big" onClick={() => c.loadDoc()}>
-          <Shapes size={18} /> New parametric part
+        <button class="big" onClick={c.newPart}>
+          <Shapes size={18} /> New Part
         </button>
       </div>
       <Show when={recent().length}>
@@ -52,7 +52,7 @@ export function Welcome() {
         <button onClick={() => c.openSample("bracket.sbridge.json")}>
           <Shapes size={22} />
           <b>Bracket</b>
-          <span>parametric</span>
+          <span>Parametric part</span>
         </button>
       </div>
       <p class="privacy">

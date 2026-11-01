@@ -38,11 +38,11 @@ const feature = (id: string, label: string, short: string, icon: IconName, run: 
 const withProfile = (profile: Extract<Feature, { kind: "extrude" }>["profile"]) => (f: Feature) => ({ ...f, profile }) as Feature;
 
 export const actions: Action[] = [
-  { id: "open", label: "Open file…", group: "File", keys: "Ctrl+O", run: () => void pickAndOpen() },
-  { id: "new-part", label: "New parametric part", group: "Design", keys: "Ctrl+Shift+N", run: () => c.loadDoc() },
+  { id: "open", label: "Open…", group: "File", keys: "Ctrl+O", run: () => void pickAndOpen() },
+  { id: "new-part", label: "New Part", short: "New Part", group: "File", keys: "Ctrl+N", run: c.newPart },
   ...templates.map((t): Action => ({
     id: `template-${t.name}`,
-    label: `New part from template: ${t.name}`,
+    label: `New from Template: ${t.name[0].toUpperCase()}${t.name.slice(1)}`,
     group: "Design",
     run: () => c.loadDoc(t),
   })),
@@ -106,16 +106,17 @@ export const actions: Action[] = [
   { id: "redo", label: "Redo", group: "Design", keys: "Ctrl+Y", run: c.redo, enabled: c.canRedo },
   {
     id: "save-design",
-    label: "Save design (.sbridge.json)",
-    group: "Design",
+    label: "Save Part",
+    short: "Save Part",
+    group: "File",
     keys: "Ctrl+S",
     run: () => c.exportInterop("json"),
     enabled: () => !!c.doc(),
   },
-  { id: "restore-design", label: "Restore autosaved design", group: "Design", run: c.restoreAutosave, enabled: c.hasAutosave },
-  { id: "sample-plate", label: "Open sample: plate (STEP)", group: "File", run: () => c.openSample("plate.step") },
-  { id: "sample-assembly", label: "Open sample: assembly (STEP)", group: "File", run: () => c.openSample("assembly.step") },
-  { id: "convert", label: "Convert / export…", group: "File", keys: "Ctrl+E", run: () => setState("convertOpen", true) },
+  { id: "restore-design", label: "Recover Autosaved Part", group: "Design", run: c.restoreAutosave, enabled: c.hasAutosave },
+  { id: "sample-plate", label: "Sample: Plate (STEP)", group: "File", run: () => c.openSample("plate.step") },
+  { id: "sample-assembly", label: "Sample: Assembly (STEP)", group: "File", run: () => c.openSample("assembly.step") },
+  { id: "convert", label: "Convert & Export…", group: "File", keys: "Ctrl+E", run: () => setState("convertOpen", true) },
   { id: "screenshot", label: "Save screenshot (PNG)", group: "File", keys: "P", run: () => c.screenshot(2), enabled: hasModel },
   {
     id: "screenshot-transparent",

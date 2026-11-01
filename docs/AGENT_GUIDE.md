@@ -138,7 +138,7 @@ Hooks are Claude Code-specific, but the scripts are plain Node. You can wire the
 3. Ask the agent to read the issue and the relevant skill, then plan before editing.
 4. Let the hooks do their job: formatting, the guard, and the verify-on-stop step.
 5. Check the **desktop app first**:
-   - **Windows:** once the PR's CI build is green, run `npm run check:desktop`. It installs that build, opens samples, builds a part, checks the icon and saves a screenshot to `desktop-check/`. With `--keep`, use the `desktop` MCP for anything specific to the change.
+   - **Windows:** run `npm run check:desktop -- --from local` (needs Rust), or, once the PR's CI build is green, `npm run check:desktop`. It installs that build, opens samples, builds a part, checks the icon and saves a screenshot to `desktop-check/`. With `--keep`, use the `desktop` MCP for anything specific to the change.
    - **Linux and macOS:** covered by the CI launch test.
    - **Web app:** check it last (`npm run dev`).
    - Put the screenshots in the PR.

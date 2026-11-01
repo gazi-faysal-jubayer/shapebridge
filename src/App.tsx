@@ -133,10 +133,10 @@ export default function App() {
 
         <section class="stage">
           <div class="viewport" ref={viewport} />
-          <Show when={state.engineReady && !state.files.length && !state.loading && !guest}>
+          <Show when={state.engineReady && !state.files.length && !c.doc() && !state.loading && !guest}>
             <Welcome />
           </Show>
-          <Show when={state.files.length}>
+          <Show when={state.files.length || c.doc()}>
             <ReviewOverlay />
             <HeadsUp />
             <ViewCube />

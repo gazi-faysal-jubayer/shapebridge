@@ -58,7 +58,7 @@ const TABS: { id: string; label: string; groups: { label: string; ids: string[] 
     groups: [
       { label: "File", ids: ["open", "new-part", "save-design", "convert"] },
       {
-        label: "Parametric export",
+        label: "Export with Parameters",
         ids: ["export-freecad", "export-openscad", "export-cadquery", "export-fusion360", "export-csv", "export-step"],
       },
     ],
