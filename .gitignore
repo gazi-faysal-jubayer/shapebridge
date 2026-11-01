@@ -6,3 +6,4 @@ src-tauri/gen/
 .DS_Store
 .claude/settings.local.json
 dist-cli/
+desktop-check/

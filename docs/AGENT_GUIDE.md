@@ -11,7 +11,7 @@ This repository is set up so an AI coding agent can work on it safely and produc
 | Instructions | `AGENTS.md`, `CLAUDE.md`                                   | project summary, commands, rules                                        | every agent that reads AGENTS.md; Claude Code reads CLAUDE.md |
 | Hooks        | `.claude/settings.json` → `scripts/hooks/*.mjs`            | format on edit, block edits to generated files, verify before finishing | Claude Code, automatically in this folder                     |
 | Skills       | `.claude/skills/*/SKILL.md`                                | step-by-step playbooks: add-format, add-feature, release, triage        | Claude Code, automatically in this folder                     |
-| MCP servers  | `.mcp.json`                                                | Playwright (drive the web app), GitHub                                  | Claude Code, after you approve them                           |
+| MCP servers  | `.mcp.json` (+ per-agent copies, see section 8)            | REA, desktop (drive the Windows app), Playwright (web), GitHub          | every agent, after you approve them                           |
 | Plugin       | `plugins/shapebridge/` + `.claude-plugin/marketplace.json` | `sbridge-author` skill for designing parts in any folder                | anyone who installs it                                        |
 | Permissions  | `.claude/settings.json` → `permissions`                    | pre-approves safe commands (dev server, tests, git status/diff)         | Claude Code                                                   |
 
@@ -78,18 +78,21 @@ A skill is a folder with a `SKILL.md`: YAML front-matter (`name`, `description`)
 
 MCP (Model Context Protocol) servers give the agent extra tools. Project servers live in `.mcp.json`, and Claude Code asks you to approve each one the first time.
 
-| Server       | Why it's here                                                                                        | Setup                                                    |
-| ------------ | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `playwright` | open http://localhost:1420, click through the UI, take screenshots, and test a two-tab share session | needs `npx` (Node 18+); downloads a browser on first use |
-| `github`     | read issues and PRs, comment, label (prefer the `gh` CLI if you have it)                             | run `/mcp` in Claude Code and sign in with GitHub        |
+| Server       | Why it's here                                                                                              | Setup                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `rea`        | inspect our own builds: `dist/` chunks, the desktop binary's resources, version-to-version changes         | installed on first use by `npx`; `scripts/hooks/ensure-rea.mjs` installs the CLI |
+| `desktop`    | click through the **real Windows app** that `npm run check:desktop` started (WebView2 debugging port 9222) | Windows; start the app with `npm run check:desktop -- --keep` first              |
+| `playwright` | open http://localhost:1420, click through the UI, take screenshots, and test a two-tab share session       | needs `npx` (Node 18+); downloads a browser on first use                         |
+| `github`     | read issues and PRs, comment, label (prefer the `gh` CLI if you have it)                                   | run `/mcp` in Claude Code and sign in with GitHub                                |
 
-### Optional: REA (reverse-engineering toolkit)
+### REA (required)
 
-[REA](https://github.com/morluto/rea) can inspect **our own** outputs: bundle composition (`analyze_web_bundle` on `dist/`), our generated sample files' containers, and release artifacts. Its own docs say not to commit it to `.mcp.json`, so install it per user:
+Every agent here uses [REA](https://github.com/morluto/rea) to inspect **our own** outputs: bundle composition (`analyze_javascript_application` on `dist/`), the desktop binaries' resources, and release artifacts.
 
-```bash
-npx rea-agents setup     # run outside the repo; choose Claude Code
-```
+- The project MCP entry runs `npx -y rea-agents@6.5.0 mcp`, so it downloads on first use and needs no machine-specific path.
+- `node scripts/hooks/ensure-rea.mjs` installs the `rea` CLI globally when it is missing. Claude Code runs it at session start; other agents must run it first (AGENTS.md).
+- For native analysis providers (Hopper, Ghidra), also run `npx rea-agents setup` once per machine.
+- To update REA, change the version in `ensure-rea.mjs` and in every `rea` MCP entry (section 8) in one PR.
 
 Allowed uses here: our own build output and sample files we made. **Not allowed:** proprietary CAD executables or vendor files you don't have rights to analyse ([plans/native-formats-research.md](plans/native-formats-research.md)).
 
@@ -117,12 +120,14 @@ Repository development tooling (hooks and the four dev skills) is **not** in the
 
 ## 8. Other agents
 
-| Agent                | What it reads                                             | Notes                                               |
-| -------------------- | --------------------------------------------------------- | --------------------------------------------------- |
-| OpenAI Codex CLI     | `AGENTS.md`                                               | run the commands in AGENTS.md before finishing      |
-| Cursor               | `AGENTS.md` (plus `.cursor/rules` if you add one)         | MCP: copy `.mcp.json` entries to `.cursor/mcp.json` |
-| GitHub Copilot agent | `AGENTS.md`, `.github/copilot-instructions.md` if present | runs CI from `build_all.yml`                        |
-| Gemini CLI           | `AGENTS.md` (configure `contextFileName`)                 |                                                     |
+| Agent                | What it reads                                             | Notes                                                 |
+| -------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| OpenAI Codex CLI     | `AGENTS.md`                                               | MCP: `.codex/config.toml`; run `ensure-rea.mjs` first |
+| Cursor               | `AGENTS.md` (plus `.cursor/rules` if you add one)         | MCP: `.cursor/mcp.json`                               |
+| GitHub Copilot agent | `AGENTS.md`, `.github/copilot-instructions.md` if present | MCP in VS Code: `.vscode/mcp.json`                    |
+| Gemini CLI           | `AGENTS.md` (configure `contextFileName`)                 | MCP: `.gemini/settings.json`                          |
+
+All of them get the same `rea` and `desktop` servers as `.mcp.json`. Keep the copies in sync.
 
 Hooks are Claude Code-specific, but the scripts are plain Node. You can wire the same scripts into other tools' hook systems, or into a git pre-commit hook.
 
@@ -132,7 +137,11 @@ Hooks are Claude Code-specific, but the scripts are plain Node. You can wire the
 2. Branch: `git switch -c viewer/section-plane`.
 3. Ask the agent to read the issue and the relevant skill, then plan before editing.
 4. Let the hooks do their job: formatting, the guard, and the verify-on-stop step.
-5. For UI changes, have it run `npm run dev` and check the result with Playwright (or the Claude desktop browser pane), with screenshots in the PR.
+5. Check the **desktop app first**:
+   - **Windows:** once the PR's CI build is green, run `npm run check:desktop`. It installs that build, opens samples, builds a part, checks the icon and saves a screenshot to `desktop-check/`. With `--keep`, use the `desktop` MCP for anything specific to the change.
+   - **Linux and macOS:** covered by the CI launch test.
+   - **Web app:** check it last (`npm run dev`).
+   - Put the screenshots in the PR.
 6. Open the PR with the template filled in. CI builds installers for every OS.
 
 ## 10. Troubleshooting
