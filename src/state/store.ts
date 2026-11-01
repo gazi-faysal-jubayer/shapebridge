@@ -61,6 +61,8 @@ interface Settings {
   reviewName: string;
   ribbonCompact: boolean;
   turn: { urls: string; username: string; credential: string };
+  /** desktop: paths of recently opened files, newest first */
+  recent: string[];
 }
 
 const defaults: Settings = {
@@ -73,6 +75,7 @@ const defaults: Settings = {
   reviewName: "",
   ribbonCompact: false,
   turn: { urls: "", username: "", credential: "" },
+  recent: [],
 };
 
 function loadSettings(): Settings {

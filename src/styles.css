@@ -1009,6 +1009,10 @@ h3 {
 .templates button b {
   text-transform: capitalize;
 }
+/* file names are shown exactly as stored */
+.templates button b.file-name {
+  text-transform: none;
+}
 .templates button span {
   font-size: 11px;
   color: var(--muted);
@@ -1759,4 +1763,33 @@ td {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* recent files on the welcome screen */
+.recent {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+  max-width: 440px;
+  width: 100%;
+  text-align: left;
+}
+.recent li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.recent .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.recent span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

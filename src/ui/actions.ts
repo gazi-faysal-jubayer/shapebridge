@@ -1,4 +1,5 @@
 // Every user action, once: menus, the command palette and keyboard shortcuts are all generated from this list.
+import { pickAndOpen } from "../platform/open";
 import { setState, state, type DisplayMode, type StdView } from "../state/store";
 import * as c from "../controller";
 import * as live from "../live";
@@ -37,7 +38,7 @@ const feature = (id: string, label: string, short: string, icon: IconName, run: 
 const withProfile = (profile: Extract<Feature, { kind: "extrude" }>["profile"]) => (f: Feature) => ({ ...f, profile }) as Feature;
 
 export const actions: Action[] = [
-  { id: "open", label: "Open file…", group: "File", keys: "Ctrl+O", run: () => document.getElementById("file-input")?.click() },
+  { id: "open", label: "Open file…", group: "File", keys: "Ctrl+O", run: () => void pickAndOpen() },
   { id: "new-part", label: "New parametric part", group: "Design", keys: "Ctrl+Shift+N", run: () => c.loadDoc() },
   ...templates.map((t): Action => ({
     id: `template-${t.name}`,

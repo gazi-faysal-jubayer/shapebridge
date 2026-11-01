@@ -3,7 +3,8 @@
 ## Open a model
 
 - Drag a file onto the window, use **Open…** (Ctrl+O), or pick a sample on the start screen.
-- Open several files at once when they belong together, for example `model.obj` + `model.mtl` + textures.
+- Open several files at once when they belong together, for example `model.obj` + `model.mtl` + textures. You can also drop the whole folder.
+- **Desktop app:** double-click a CAD file, or use **Open with → ShapeBridge**. A second file opens in the window that is already running. **File → Open recent**, the start screen and the Design library list your last 10 files.
 - Supported formats are listed in [FORMATS.md](FORMATS.md). Nothing is uploaded; files are read on your device.
 
 ## Find your way around

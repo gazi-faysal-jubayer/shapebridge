@@ -6,6 +6,7 @@ import * as THREE from "three";
 import type { Axis, DisplayMode, Measurement, Props, Section, StdView, Tool, TreeNode } from "../state/store";
 import { explodeOffset, sectionPlane, viewDirection, zUpExtensions } from "./math";
 import { buildTree, type OvModel } from "./tree";
+import { writeStl, type LeanMesh } from "./stl";
 
 export const meshExports = [
   { ext: "stl", label: "STL (binary)", format: OV.FileFormat.Binary },
@@ -46,12 +47,18 @@ export interface EngineEvents {
 
 const SELECT_COLOR = new OV.RGBColor(59, 130, 246);
 const BIG_MODEL_TRIANGLES = 300_000;
+/** STLs this big skip OV's per-vertex model (about 1.4 GB of heap per million triangles) for typed arrays */
+const LEAN_STL_BYTES = 20e6;
 const keyOf = (ud: UserData) => ud.originalMeshInstance.id.GetKey();
 
 export class Engine {
   readonly viewer = new OV.Viewer();
   private loader = new OV.ThreeModelLoader();
   private model: OV.Model | null = null;
+  /** a very large mesh loaded through the lean path instead of an OV model */
+  private lean: { mesh: LeanMesh; name: string; geometry: THREE.BufferGeometry } | null = null;
+  /** the BVH worker holds the lean mesh's vertex array until it finishes, so picking waits */
+  private picking = true;
   private ids = new Map<string, OV.MeshInstanceId>();
   private upAxis: "y" | "z" = "y";
   private tool: Tool = "select";
@@ -62,6 +69,7 @@ export class Engine {
   private markers: { point: THREE.Vector3; normal: THREE.Vector3 }[] = [];
   private canvas: HTMLCanvasElement;
   private lastHover = 0;
+  private caps = new THREE.Group();
 
   constructor(
     private parent: HTMLElement,
@@ -69,7 +77,10 @@ export class Engine {
   ) {
     this.canvas = document.createElement("canvas");
     parent.appendChild(this.canvas);
+    // OV's renderer asks for no stencil buffer; creating the context first gives three one for section caps
+    this.canvas.getContext("webgl2", { stencil: true, antialias: true });
     this.viewer.Init(this.canvas);
+    this.viewer.scene.add(this.caps);
     this.viewer.SetBackgroundColor(new OV.RGBAColor(0, 0, 0, 0));
     this.viewer.renderer.localClippingEnabled = true;
     this.resize();
@@ -84,7 +95,7 @@ export class Engine {
     this.viewer.SetMouseClickHandler((button: number, coords: OV.Coord2D) => this.click(button, coords));
     this.viewer.SetMouseMoveHandler((coords: OV.Coord2D) => this.move(coords));
     this.viewer.SetContextMenuHandler((global: OV.Coord2D, local: OV.Coord2D) => {
-      const ud = this.viewer.GetMeshUserDataUnderMouse(OV.IntersectionMode.MeshOnly, local) as UserData | null;
+      const ud = this.picking ? (this.viewer.GetMeshUserDataUnderMouse(OV.IntersectionMode.MeshOnly, local) as UserData | null) : null;
       this.events.onContext(global.x, global.y, ud ? keyOf(ud) : null);
     });
     // OV's click callback has no modifier keys, so remember them at pointer-down
@@ -102,6 +113,7 @@ export class Engine {
   load(files: File[]): Promise<LoadResult> {
     this.viewer.Clear();
     this.reset();
+    if (files.length === 1 && /\.stl$/i.test(files[0].name) && files[0].size > LEAN_STL_BYTES) return this.loadLean(files[0]);
     const settings = new OV.ImportSettings();
     settings.defaultColor = new OV.RGBColor(176, 190, 197);
     let crashed: (e: PromiseRejectionEvent) => void = () => {};
@@ -139,6 +151,65 @@ export class Engine {
     return loading.finally(() => window.removeEventListener("unhandledrejection", crashed));
   }
 
+  /** Large STL: parsed in a worker into typed arrays and shown as one buffer-geometry part. */
+  private async loadLean(file: File): Promise<LoadResult> {
+    const worker = new Worker(new URL("./import.worker.ts", import.meta.url), { type: "module" });
+    const res = await new Promise<{ ok: true; mesh: LeanMesh } | { ok: false; error: string }>((ok) => {
+      worker.onmessage = (e) => ok(e.data);
+      worker.onerror = (e) => ok({ ok: false, error: e.message });
+      worker.postMessage(file);
+    }).finally(() => worker.terminate());
+    if (!res.ok) throw new Error(res.error);
+    const { mesh } = res;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(mesh.positions, 3));
+    geometry.setAttribute("normal", new THREE.BufferAttribute(mesh.normals, 3));
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    // OV expects a material array per mesh, like its own converter makes
+    geometry.addGroup(0, mesh.stats.triangles * 3, 0);
+    const part = new THREE.Mesh(geometry, [new THREE.MeshPhongMaterial({ color: 0xb0bec5 })]);
+    const key = this.register(0, 0);
+    // the shape OV's picking, highlight and visibility look for
+    part.userData = { originalMeshInstance: { id: this.ids.get(key) }, threeMaterials: null };
+    const root = new THREE.Object3D();
+    root.add(part);
+    // STL is Z-up; OV turns Z-up files into its Y-up scene the same way
+    root.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+    this.lean = { mesh, name: file.name, geometry };
+    // an edge outline over millions of triangles is both unreadable and seconds of main-thread work
+    this.setDisplay(this.display);
+    this.viewer.SetMainObject(root);
+    this.rotated = true;
+    this.upAxis = "y";
+    this.viewer.SetUpVector(OV.Direction.Y, false);
+    this.applyMaterials();
+    this.setView("iso");
+    void this.accelerateInWorker(geometry);
+    const name = file.name.replace(/\.stl$/i, "");
+    return {
+      tree: { id: "root", name, keys: [key], children: [] },
+      triangles: mesh.stats.triangles,
+      parts: 1,
+      unit: "Unknown",
+      upAxis: "y",
+    };
+  }
+
+  /** Picking acceleration for the lean path, built in three-mesh-bvh's worker so the UI stays responsive. */
+  private async accelerateInWorker(geometry: THREE.BufferGeometry) {
+    const [bvh, { GenerateMeshBVHWorker }] = await Promise.all([import("three-mesh-bvh"), import("three-mesh-bvh/worker")]);
+    const worker = new GenerateMeshBVHWorker();
+    this.picking = false;
+    try {
+      (geometry as THREE.BufferGeometry & { boundsTree?: unknown }).boundsTree = await worker.generate(geometry);
+      THREE.Mesh.prototype.raycast = bvh.acceleratedRaycast;
+    } finally {
+      worker.dispose();
+      this.picking = true;
+    }
+  }
+
   private register(nodeId: number, meshIndex: number) {
     const id = new OV.MeshInstanceId(nodeId, meshIndex);
     this.ids.set(id.GetKey(), id);
@@ -147,6 +218,7 @@ export class Engine {
 
   private reset() {
     this.model = null;
+    this.lean = null;
     this.ids.clear();
     this.explodeBase.clear();
     this.markers = [];
@@ -172,6 +244,7 @@ export class Engine {
   }
 
   private hit(coords: OV.Coord2D): Hit | null {
+    if (!this.picking) return null;
     return this.viewer.GetMeshIntersectionUnderMouse(OV.IntersectionMode.MeshOnly, coords) as Hit | null;
   }
 
@@ -182,13 +255,13 @@ export class Engine {
       const h = this.hit(coords);
       return void (h && this.events.onPlace(h.point.toArray() as V3));
     }
-    const ud = this.viewer.GetMeshUserDataUnderMouse(OV.IntersectionMode.MeshAndLine, coords) as UserData | null;
+    const ud = this.picking ? (this.viewer.GetMeshUserDataUnderMouse(OV.IntersectionMode.MeshAndLine, coords) as UserData | null) : null;
     this.events.onPick(ud ? keyOf(ud) : null, this.additive);
   }
 
   private move(coords: OV.Coord2D) {
     const now = performance.now();
-    if (now - this.lastHover < 40 || !this.model) return; // raycasts are not free on big models
+    if (now - this.lastHover < 40 || !(this.model || this.lean)) return; // raycasts are not free on big models
     this.lastHover = now;
     const h = this.hit(coords);
     this.events.onHover(h ? this.toModel(h.point) : null, h ? (h.point.toArray() as V3) : null);
@@ -244,11 +317,13 @@ export class Engine {
 
   setDisplay(mode: DisplayMode) {
     this.display = mode;
-    this.viewer.SetEdgeSettings(new OV.EdgeSettings(mode === "edges" || mode === "xray", new OV.RGBColor(30, 41, 59), 25));
+    const edges = (mode === "edges" || mode === "xray") && !this.lean;
+    this.viewer.SetEdgeSettings(new OV.EdgeSettings(edges, new OV.RGBColor(30, 41, 59), 25));
     this.applyMaterials();
   }
 
   private applyMaterials() {
+    const capped = this.updateCaps();
     const planes = this.clip ? [this.clip] : [];
     const each = (m: THREE.Material, isEdge: boolean) => {
       if (!this.original.has(m)) {
@@ -268,8 +343,8 @@ export class Engine {
         m.transparent = xray || !!o.transparent;
         m.opacity = xray ? 0.25 : o.opacity!;
         m.depthWrite = xray ? false : o.depthWrite!;
-        // with a section active, show inner faces so the cut reads as solid
-        m.side = this.clip ? THREE.DoubleSide : o.side!;
+        // without caps, show inner faces so the cut still reads as solid
+        m.side = this.clip && !capped ? THREE.DoubleSide : o.side!;
       }
       m.needsUpdate = true;
     };
@@ -332,6 +407,74 @@ export class Engine {
     this.applyMaterials();
   }
 
+  /**
+   * Solid caps on the section plane, one per visible part, drawn with the stencil technique: the part's
+   * back faces add and its front faces subtract, so the cap fills only where the plane is inside the part.
+   * Returns whether caps are shown.
+   */
+  private updateCaps(): boolean {
+    for (const o of this.caps.children as THREE.Mesh[]) [o.material].flat().forEach((m) => m.dispose());
+    this.capPlane?.dispose();
+    this.caps.clear();
+    const parts: THREE.Mesh[] = [];
+    this.meshes((m) => m.visible && parts.push(m));
+    // shortcut: one stencil pass per part, so very large assemblies keep the double-sided fallback; upgrade with merged geometry
+    if (!this.clip || this.display === "xray" || this.display === "wireframe" || !parts.length || parts.length > 300) return false;
+    const box = this.sceneBox()!;
+    const size = box.getSize(new THREE.Vector3()).length() * 2;
+    const plane = (this.capPlane = new THREE.PlaneGeometry(size, size));
+    const at = this.clip.coplanarPoint(new THREE.Vector3());
+    const turn = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), this.clip.normal);
+    parts.forEach((part, i) => {
+      const order = 10 + i * 3;
+      const stencil = (side: THREE.Side, op: THREE.StencilOp) =>
+        new THREE.MeshBasicMaterial({
+          side,
+          colorWrite: false,
+          depthWrite: false,
+          depthTest: false,
+          clippingPlanes: [this.clip!],
+          stencilWrite: true,
+          stencilFunc: THREE.AlwaysStencilFunc,
+          stencilFail: op,
+          stencilZFail: op,
+          stencilZPass: op,
+        });
+      for (const [mat, k] of [
+        [stencil(THREE.BackSide, THREE.IncrementWrapStencilOp), 0],
+        [stencil(THREE.FrontSide, THREE.DecrementWrapStencilOp), 1],
+      ] as const) {
+        const pass = new THREE.Mesh(part.geometry, mat);
+        pass.matrixAutoUpdate = pass.matrixWorldAutoUpdate = false;
+        pass.renderOrder = order + k;
+        // follow the part when it moves (explode) without re-parenting it
+        pass.onBeforeRender = () => pass.matrixWorld.copy(part.matrixWorld);
+        this.caps.add(pass);
+      }
+      const src = [part.material].flat()[0] as THREE.MeshPhongMaterial;
+      const cap = new THREE.Mesh(
+        plane,
+        new THREE.MeshPhongMaterial({
+          color: src.color ?? 0x9aa8b8,
+          side: THREE.DoubleSide,
+          stencilWrite: true,
+          stencilRef: 0,
+          stencilFunc: THREE.NotEqualStencilFunc,
+          // writing 0 where the cap draws leaves the stencil clear for the next part
+          stencilFail: THREE.ReplaceStencilOp,
+          stencilZFail: THREE.ReplaceStencilOp,
+          stencilZPass: THREE.ReplaceStencilOp,
+        }),
+      );
+      cap.position.copy(at);
+      cap.quaternion.copy(turn);
+      cap.renderOrder = order + 2;
+      this.caps.add(cap);
+    });
+    return true;
+  }
+  private capPlane: THREE.PlaneGeometry | null = null;
+
   /** The user's X/Y/Z are CAD axes; map them onto the Y-up scene when the model was rotated. */
   private sceneAxis(axis: Axis): Axis {
     return this.upAxis === "z" ? axis : ({ x: "x", y: "z", z: "y" } as const)[axis];
@@ -365,6 +508,18 @@ export class Engine {
   // ---------- data ----------
 
   properties(keys: string[]): Props | null {
+    if (this.lean) {
+      const { stats } = this.lean.mesh;
+      return {
+        name: this.lean.name,
+        vertices: stats.triangles * 3,
+        triangles: stats.triangles,
+        size: [0, 1, 2].map((i) => stats.max[i] - stats.min[i]) as V3,
+        area: stats.area,
+        volume: stats.volume > 0 ? stats.volume : null,
+        properties: [],
+      };
+    }
     if (!this.model) return null;
     const target = keys.length === 1 ? this.model.GetMeshInstance(this.ids.get(keys[0])!) : this.model;
     if (!target) return null;
@@ -406,6 +561,12 @@ export class Engine {
   /** Mesh export of what's loaded; `scale` converts units (OBJ/STL/… carry no unit of their own). */
   export(ext: MeshExt, scale = 1): Promise<{ name: string; data: Uint8Array }[]> {
     const spec = meshExports.find((m) => m.ext === ext)!;
+    if (this.lean) {
+      if (ext !== "stl") return Promise.reject(new Error("Very large meshes export as STL only"));
+      // read the live attribute: the BVH worker hands back a new array in place of the one it borrowed
+      const positions = this.lean.geometry.attributes.position.array as Float32Array;
+      return Promise.resolve([{ name: this.lean.name, data: writeStl(positions, scale) }]);
+    }
     return new Promise((ok, fail) => {
       if (!this.model) return fail(new Error("Nothing to export"));
       const transformation = new OV.Transformation(new OV.Matrix(null).CreateScale(scale, scale, scale));
