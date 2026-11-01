@@ -8,13 +8,14 @@
 //   add --keep to leave the app running on the debugging port for the `desktop` MCP
 // Linux/macOS: pass --bin <path to the app binary> for a launch check; their webviews have no CDP.
 import { execFileSync, execSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
 const opt = (name, def) => (args.includes(`--${name}`) ? (args[args.indexOf(`--${name}`) + 1] ?? true) : def);
 const PORT = Number(opt("port", 9222));
+const BENCH = opt("bench");
 const OUT = "desktop-check";
 const REPO = "gazi-faysal-jubayer/shapebridge";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -60,7 +61,9 @@ function installer() {
     // rustup's default bin dir may not be on PATH in a fresh shell; CARGO_HOME says where it is
     const env = { ...process.env };
     if (env.CARGO_HOME) env.PATH = `${join(env.CARGO_HOME, "bin")};${env.PATH}`;
-    execSync("npx tauri build --bundles nsis", { stdio: "inherit", env });
+    // bundle the native STEP reader when scripts/build-occt.mjs has built it; otherwise the app uses the built-in one
+    const native = existsSync("src-tauri/binaries/shapebridge-occt-x86_64-pc-windows-msvc.exe");
+    execSync(`npx tauri build --bundles nsis${native ? " --config src-tauri/tauri.native.conf.json" : ""}`, { stdio: "inherit", env });
     const sha = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
     const dirty = execSync("git status --porcelain -- src src-tauri", { encoding: "utf8" }).trim() ? " + local changes" : "";
     return { file: findSetup(join("src-tauri", "target", "release", "bundle", "nsis")), source: `local build (${sha}${dirty})` };
@@ -116,6 +119,10 @@ if (opt("dev")) {
   results.push({ name: "build", ok: true, detail: "tauri dev" });
 } else {
   await check("install", () => {
+    if (opt("from") === "installed") {
+      if (!existsSync(APP)) throw new Error(`--from installed, but ${APP} is missing`);
+      return "using the installed app";
+    }
     const { file, source } = installer();
     execFileSync(file, ["/S"]); // per-user NSIS install, no admin prompt
     if (!existsSync(APP)) throw new Error(`installer finished but ${APP} is missing`);
@@ -125,7 +132,8 @@ if (opt("dev")) {
     return `${version ?? "?"} from ${source}`;
   });
   if (!results.at(-1).ok) report();
-  app = spawn(APP, [], {
+  // --bench opens the file the way the OS does: as a command-line argument at start-up
+  app = spawn(APP, BENCH ? [resolve(BENCH)] : [], {
     env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${PORT}` },
     detached: true,
     stdio: "ignore",
@@ -147,10 +155,17 @@ const call = (method, params = {}) =>
     ws.addEventListener("message", onMsg);
     ws.send(JSON.stringify({ id, method, params }));
   });
-const evaluate = async (fn) => {
-  const r = await call("Runtime.evaluate", { expression: `(${fn})()`, awaitPromise: true, returnByValue: true });
-  if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
-  return r.result.value;
+const evaluate = async (fn, retry = true) => {
+  try {
+    const r = await call("Runtime.evaluate", { expression: `(${fn})()`, awaitPromise: true, returnByValue: true });
+    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
+    return r.result.value;
+  } catch (e) {
+    // a freshly installed app can reload its page once while WebView2 sets up its profile
+    if (!retry || !/context was destroyed/.test(e.message)) throw e;
+    await sleep(2000);
+    return evaluate(fn, false);
+  }
 };
 
 await check("starts and stays up", async () => {
@@ -158,7 +173,8 @@ await check("starts and stays up", async () => {
   while (Date.now() - t < (opt("dev") ? 600_000 : 30_000)) {
     if (app.exitCode !== null) throw new Error(`exited with code ${app.exitCode}`);
     try {
-      const page = (await (await fetch(`http://127.0.0.1:${PORT}/json`)).json()).find((p) => p.type === "page");
+      // wait for the app's own page (it has a title), not the blank one WebView2 starts with
+      const page = (await (await fetch(`http://127.0.0.1:${PORT}/json`)).json()).find((p) => p.type === "page" && p.title);
       if (page) {
         ws = new WebSocket(page.webSocketDebuggerUrl);
         await new Promise((r, j) => ((ws.onopen = r), (ws.onerror = j)));
@@ -171,7 +187,87 @@ await check("starts and stays up", async () => {
   }
   throw new Error("no WebView2 page on the debugging port");
 });
-if (!ws) report();
+
+if (BENCH && ws) {
+  mkdirSync(OUT, { recursive: true });
+  await check(`bench ${basename(BENCH)}`, async () => {
+    // long tasks since the page started, including those before we attached
+    await evaluate(`() => {
+      window.__long = [];
+      new PerformanceObserver((l) => window.__long.push(...l.getEntries().map((e) => e.duration))).observe({ type: "longtask", buffered: true });
+    }`);
+    let s;
+    for (const t = Date.now(); Date.now() - t < 900_000; await sleep(250)) {
+      s = await evaluate(
+        `() => ({ status: document.querySelector("footer")?.innerText.replace(/\\n/g, " · ") ?? "", t: performance.now() })`,
+      );
+      if (/Opened|Could not|fail/i.test(s.status)) break;
+    }
+    if (!/Opened/.test(s.status)) throw new Error(s.status);
+    await sleep(1500); // let post-load work (BVH, materials) land in the long-task list
+    // a model that loads but doesn't draw (clip planes, materials) has fooled us before: measure it in the fitted view
+    const coverage = await modelCoverage();
+    if (coverage < 0.02) throw new Error(`opened, but the model covers only ${(coverage * 100).toFixed(1)}% of the view`);
+    const orbit = await orbitFps(3000);
+    const longTasks = await evaluate(`() => window.__long`);
+    const heap = (await call("Runtime.getHeapUsage")).usedSize;
+    const r = {
+      file: `${basename(BENCH)} (${(statSync(BENCH).size / 1e6).toFixed(1)} MB)`,
+      model: s.status
+        .split(" · ")
+        .filter((x) => /parts|tris/.test(x))
+        .join(" "),
+      openSeconds: +(s.t / 1000).toFixed(1),
+      longestTaskMs: Math.round(Math.max(0, ...longTasks)),
+      longTasksOver200ms: longTasks.filter((d) => d > 200).length,
+      viewCoverage: `${Math.round(coverage * 100)}%`,
+      orbitFps: orbit,
+      jsHeapMB: Math.round(heap / 1e6),
+      peakMemoryMB: peakWorkingSetMB(),
+    };
+    writeFileSync(join(OUT, `bench-${basename(BENCH)}.json`), JSON.stringify(r, null, 2));
+    return Object.entries(r)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(" · ");
+  });
+}
+
+/** Frames per second while dragging to orbit, as the user would; OV renders on every mouse move. */
+async function orbitFps(ms) {
+  const [x, y] = await evaluate(
+    `() => { const r = document.querySelector(".viewport canvas").getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }`,
+  );
+  await evaluate(
+    `() => { window.__frames = 0; window.__orbit = true; const f = () => { window.__frames++; if (window.__orbit) requestAnimationFrame(f); }; requestAnimationFrame(f); }`,
+  );
+  await call("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
+  const t = Date.now();
+  for (let i = 0; Date.now() - t < ms; i++) {
+    await call("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: x + 150 * Math.sin(i / 10),
+      y: y + 60 * Math.cos(i / 13),
+      button: "left",
+      buttons: 1,
+    });
+    await sleep(16);
+  }
+  await call("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+  const frames = await evaluate(`() => { window.__orbit = false; return window.__frames; }`);
+  return Math.round((frames * 1000) / (Date.now() - t));
+}
+
+/** Sum of the per-process peak working sets of the app and every process under it (its WebView2 tree). */
+function peakWorkingSetMB() {
+  // WebView2 children don't name the app on their command line, so walk the process tree instead
+  const ps = `$all = Get-CimInstance Win32_Process
+$ids = @($all | Where-Object Name -eq 'shapebridge.exe' | ForEach-Object ProcessId)
+do { $n = $ids.Count; $ids = @($ids + ($all | Where-Object { $ids -contains $_.ParentProcessId } | ForEach-Object ProcessId)) | Select-Object -Unique } while ($ids.Count -gt $n)
+($all | Where-Object { $ids -contains $_.ProcessId } | Measure-Object PeakWorkingSetSize -Sum).Sum`;
+  const kb = Number(execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" }).trim()); // reported in KB
+  return Math.round(kb / 1024);
+}
+if (!ws || BENCH) finish();
 
 await check("ribbon", async () => {
   await evaluate(
@@ -188,7 +284,10 @@ const openFromLibrary = (label, wait) =>
     const status = () => document.querySelector("footer")?.innerText.replace(/\\n/g, " · ") ?? "";
     document.querySelector('.task-tabs button[aria-label="Design library"]')?.click();
     await w(200);
-    const b = [...document.querySelectorAll(".library button")].find((b) => b.textContent.toLowerCase().includes(${JSON.stringify(label)}));
+    // samples and templates only: Recent entries (their tooltip is a disk path) reopen from disk with the native reader
+    const b = [...document.querySelectorAll(".library button")].find(
+      (b) => !/[\\\\/]/.test(b.title) && b.textContent.toLowerCase().includes(${JSON.stringify(label)}),
+    );
     if (!b) throw new Error("not in the Design library");
     b.click();
     const t = performance.now();
@@ -206,6 +305,46 @@ await check("parametric build (bracket)", async () => {
   if (!n) throw new Error("no features in the tree");
   return `${n} features · ${s}`;
 });
+
+await check("open from the OS: STEP with the native reader", async () => {
+  // the same file through the built-in reader first, as the reference for how much of the view it should cover
+  await openFromLibrary("assembly.step", 60_000);
+  const builtIn = await modelCoverage();
+  // a second launch with a path is what double-clicking a file does; the running window opens it
+  spawn(APP, [resolve("public/samples/assembly.step")], { detached: true, stdio: "ignore" }).unref();
+  const r = await evaluate(`async () => {
+    const w = (ms) => new Promise((r) => setTimeout(r, ms));
+    const reader = () => [...document.querySelectorAll(".task-body dt")].find((d) => d.textContent === "Reader")?.nextElementSibling?.textContent ?? "";
+    document.querySelector('.task-tabs button[aria-label="Properties"]')?.click();
+    for (const t = performance.now(); performance.now() - t < 60000 && !/native/.test(reader()); ) await w(300);
+    await w(500);
+    return { status: document.querySelector("footer")?.innerText.replace(/\\n/g, " · ") ?? "", reader: reader() };
+  }`);
+  if (!/Opened assembly.step/.test(r.status)) throw new Error(r.status);
+  if (!/native/.test(r.reader)) throw new Error(`opened with the ${r.reader || "unknown"} reader, not the native one`);
+  // loading isn't enough: the parts must draw like the built-in reader's (glTF defaults once made them black on black)
+  const shown = await modelCoverage();
+  const pct = (v) => `${(v * 100).toFixed(0)}%`;
+  if (shown < builtIn * 0.6)
+    throw new Error(`the model covers ${pct(shown)} of the view, against ${pct(builtIn)} with the built-in reader`);
+  return `${r.reader} · covers ${pct(shown)} of the view (built-in reader: ${pct(builtIn)}) · ${r.status}`;
+});
+
+/** Share of the 3D view whose pixels differ clearly from its background (the top-left corner). */
+async function modelCoverage() {
+  const box = await evaluate(
+    `() => { const r = document.querySelector(".viewport canvas").getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, scale: 1 }; }`,
+  );
+  const file = join(tmpdir(), `sb-view-${process.pid}.png`);
+  writeFileSync(file, Buffer.from((await call("Page.captureScreenshot", { format: "png", clip: box })).data, "base64"));
+  const ps = `Add-Type -AssemblyName System.Drawing
+$b = New-Object System.Drawing.Bitmap '${file}'
+$bg = $b.GetPixel(4, 4); $n = 0; $hit = 0
+for ($x = 0; $x -lt $b.Width; $x += 4) { for ($y = 0; $y -lt $b.Height; $y += 4) { $p = $b.GetPixel($x, $y); $n++
+  if ([math]::Abs($p.R - $bg.R) + [math]::Abs($p.G - $bg.G) + [math]::Abs($p.B - $bg.B) -gt 20) { $hit++ } } }
+$b.Dispose(); [math]::Round($hit / $n, 4)`;
+  return Number(execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" }).trim());
+}
 
 await check("New Part (Ctrl+N) is empty", async () => {
   const r = await evaluate(`async () => {
@@ -242,12 +381,16 @@ $d = 0; for ($x = 0; $x -lt 32; $x++) { for ($y = 0; $y -lt 32; $y++) { $p = $a.
     return `mean difference ${diff}/255`;
   });
 
-// leave no debugging port open (unless --keep, for the `desktop` MCP); restore the app if the user had it running
-ws?.close();
-if (opt("keep")) console.log(`\nThe app is still running with its debugging port on ${PORT}; the desktop MCP can attach now.`);
-else if (opt("dev")) app.kill();
-else {
-  quit();
-  if (wasRunning) spawn(APP, [], { detached: true, stdio: "ignore" }).unref();
+finish();
+
+function finish() {
+  // leave no debugging port open (unless --keep, for the `desktop` MCP); restore the app if the user had it running
+  ws?.close();
+  if (opt("keep")) console.log(`\nThe app is still running with its debugging port on ${PORT}; the desktop MCP can attach now.`);
+  else if (opt("dev")) app.kill();
+  else {
+    quit();
+    if (wasRunning) spawn(APP, [], { detached: true, stdio: "ignore" }).unref();
+  }
+  report();
 }
-report();

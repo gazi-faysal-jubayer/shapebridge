@@ -95,6 +95,8 @@ export const [state, setState] = createStore({
   modelName: "",
   /** model unit as an OV Unit enum name; "Unknown" is treated as millimetres */
   modelUnit: "Unknown",
+  /** which importer read the open file: the desktop's native OpenCascade or the built-in (WebAssembly) one */
+  reader: "",
   upAxis: "y" as "y" | "z",
   tree: null as TreeNode | null,
   stats: { parts: 0, triangles: 0 },

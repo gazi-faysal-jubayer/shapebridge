@@ -50,6 +50,27 @@ const BIG_MODEL_TRIANGLES = 300_000;
 /** STLs this big skip OV's per-vertex model (about 1.4 GB of heap per million triangles) for typed arrays */
 const LEAN_STL_BYTES = 20e6;
 const ORIGIN_SIZE = 50;
+/** "part.step.glb": glTF that the desktop's native OpenCascade sidecar wrote from a STEP/IGES/BREP file */
+const NATIVE_GLB = /\.(step|stp|iges|igs|brep|brp)\.glb$/i;
+
+/**
+ * The native reader's glTF arrives with physically based materials, which OV lights for an environment map we don't
+ * use, so they look dark (and black with glTF's default metalness). STEP colours are plain paint: show them with
+ * the same Phong materials OV's own STEP reader makes, so a file looks the same whichever reader opened it.
+ */
+function usePhong(object: THREE.Object3D) {
+  object.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const phong = (m: THREE.Material) => {
+      if (!(m instanceof THREE.MeshStandardMaterial)) return m;
+      const p = new THREE.MeshPhongMaterial({ color: m.color, vertexColors: m.vertexColors, opacity: m.opacity, transparent: m.transparent, alphaTest: m.alphaTest, side: THREE.DoubleSide }); // prettier-ignore
+      m.dispose();
+      return p;
+    };
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(phong) : phong(mesh.material);
+  });
+}
 
 /** Front (XZ), Top (XY) and Right (YZ) planes in the part's Z-up frame, turned into the Y-up scene. */
 function originPlanes(): THREE.Group {
@@ -155,18 +176,23 @@ export class Engine {
         onVisualizationStart: () => {},
         onTextureLoaded: () => this.viewer.Render(),
         onModelFinished: async (result: { model: OV.Model; upVector: number }, object: THREE.Object3D) => {
-          this.viewer.SetMainObject(object);
+          if (NATIVE_GLB.test(files[0]?.name ?? "")) usePhong(object);
+          this.setMainObject(object);
           this.model = result.model;
-          const ext = (files[0]?.name.split(".").pop() ?? "").toLowerCase();
+          const name = files[0]?.name ?? "Model";
+          // a STEP/IGES/BREP that the desktop's native reader turned into glTF keeps its own Z-up frame and millimetres
+          const native = NATIVE_GLB.test(name);
+          const ext = ((native ? name.split(".").at(-2) : name.split(".").pop()) ?? "").toLowerCase();
           this.rotated = result.upVector === OV.Direction.Z;
           this.upAxis = zUpExtensions.has(ext) ? "z" : "y";
           this.viewer.SetUpVector(this.upAxis === "z" ? OV.Direction.Z : OV.Direction.Y, false);
-          const tree = buildTree(result.model as unknown as OvModel, (n, m) => this.register(n, m), files[0]?.name ?? "Model");
+          const tree = buildTree(result.model as unknown as OvModel, (n, m) => this.register(n, m), name.replace(NATIVE_GLB, ".$1"));
           const triangles = result.model.TriangleCount();
           if (triangles > BIG_MODEL_TRIANGLES) await this.accelerate();
           this.applyMaterials();
           this.setView("iso");
-          resolve({ tree, triangles, parts: tree.keys.length, unit: unitName(result.model.GetUnit()), upAxis: this.upAxis });
+          const unit = native ? "Millimeter" : unitName(result.model.GetUnit());
+          resolve({ tree, triangles, parts: tree.keys.length, unit, upAxis: this.upAxis });
         },
         onLoadError: (err: { code: number; message: string | null }) =>
           reject(
@@ -205,7 +231,7 @@ export class Engine {
     this.lean = { mesh, name: file.name, geometry };
     // an edge outline over millions of triangles is both unreadable and seconds of main-thread work
     this.setDisplay(this.display);
-    this.viewer.SetMainObject(root);
+    this.setMainObject(root);
     this.rotated = true;
     this.upAxis = "y";
     this.viewer.SetUpVector(OV.Direction.Y, false);
@@ -381,6 +407,16 @@ export class Engine {
 
   setProjection(p: "perspective" | "orthographic") {
     this.viewer.SetProjectionMode(p === "orthographic" ? OV.ProjectionMode.Orthographic : OV.ProjectionMode.Perspective);
+  }
+
+  /**
+   * Shows a loaded model and fits the camera's clip planes to it. OV's low-level Viewer only does that when the
+   * projection changes, so without it every model kept a 1 m far plane and anything bigger was cut off.
+   */
+  private setMainObject(object: THREE.Object3D) {
+    object.updateMatrixWorld(true); // the bounds must include each part's placement, before the first render
+    this.viewer.SetMainObject(object);
+    this.viewer.AdjustClippingPlanes();
   }
 
   /** Empty scene with the Front/Top/Right origin planes, for a new part before its first feature. */
