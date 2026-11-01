@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Desktop: double-clicking a CAD file or "Open with" opens it in ShapeBridge, and a second file goes to the window that is already running. The native Open dialog and a recent-files list (File → Open recent, the start screen, the Design library).
+- Dropping a folder opens everything in it.
 - CI: a dependency audit (`npm audit` for runtime packages, `cargo audit` for the desktop shell) and a launch smoke test that starts every desktop build and saves a screenshot.
 - CAD-style workspace:
   - a ribbon command bar (Features, Sketch, Evaluate, Review, View, Convert) with an original icon set

@@ -1,11 +1,27 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Save dialogs and writing the file the user picked.",
+  "description": "Open and save dialogs, and reading or writing the files the user picked or opened with the app.",
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "dialog:allow-open",
     "dialog:allow-save",
-    { "identifier": "fs:allow-write-file", "allow": [{ "path": "**" }] }
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [
+        {
+          "path": "**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        {
+          "path": "**"
+        }
+      ]
+    }
   ]
 }
