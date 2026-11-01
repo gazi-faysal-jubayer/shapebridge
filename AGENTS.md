@@ -33,12 +33,15 @@ npx vitest run           # unit + golden + real-OCCT kernel tests (fast)
 npx vitest run -u        # update golden files; then REVIEW the diff
 npm run e2e              # Playwright end-to-end tests (after npm run build)
 npm run build
-npm run check:desktop    # install the CI-built Windows app and check it for real (Windows)
+npm run check:desktop -- --from local   # build this checkout, install it and check it for real (Windows)
 ```
 
 Done means typecheck, tests and build pass, **and the desktop app is checked**:
 
-- **Windows:** run `npm run check:desktop`. It installs the latest green CI build of your branch (or `--from nightly`), opens samples, builds a part, checks the app icon and saves a screenshot.
+- **Windows:** run `npm run check:desktop -- --from local`.
+  - It builds this checkout with `tauri build`, installs it, opens samples, builds a part, checks New Part and the app icon, and saves a screenshot.
+  - It needs Rust (`rustup`, MSVC toolchain) and the Visual Studio C++ Build Tools.
+  - Without Rust, leave out `--from local` to check the latest green CI build of the branch instead (or use `--from nightly`).
 - **Linux and macOS:** the CI desktop jobs launch the app on every OS.
 - **Web app:** check it last (`npm run dev`).
 

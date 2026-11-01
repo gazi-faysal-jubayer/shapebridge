@@ -2,6 +2,7 @@
 // WebView2 remote debugging, drives it over CDP, and prints a pass/fail table.
 //   npm run check:desktop                    latest green CI build of this branch, else nightly
 //   npm run check:desktop -- --from nightly  the nightly-builds release
+//   npm run check:desktop -- --from local    build this checkout with `tauri build` first (needs Rust)
 //   npm run check:desktop -- --from <setup.exe>
 //   npm run check:desktop -- --dev           `tauri dev` instead of an installer (needs Rust)
 //   add --keep to leave the app running on the debugging port for the `desktop` MCP
@@ -55,6 +56,15 @@ const findSetup = (dir) => {
 function installer() {
   const from = opt("from", "branch");
   if (typeof from === "string" && from.endsWith(".exe")) return { file: from, source: from };
+  if (from === "local") {
+    // rustup's default bin dir may not be on PATH in a fresh shell; CARGO_HOME says where it is
+    const env = { ...process.env };
+    if (env.CARGO_HOME) env.PATH = `${join(env.CARGO_HOME, "bin")};${env.PATH}`;
+    execSync("npx tauri build --bundles nsis", { stdio: "inherit", env });
+    const sha = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
+    const dirty = execSync("git status --porcelain -- src src-tauri", { encoding: "utf8" }).trim() ? " + local changes" : "";
+    return { file: findSetup(join("src-tauri", "target", "release", "bundle", "nsis")), source: `local build (${sha}${dirty})` };
+  }
   const dir = mkdtempSync(join(tmpdir(), "sb-installer-"));
   if (from !== "nightly") {
     const branch = execSync("git branch --show-current", { encoding: "utf8" }).trim();
@@ -195,6 +205,20 @@ await check("parametric build (bracket)", async () => {
   const n = await evaluate(`() => document.querySelectorAll("li.feature").length`);
   if (!n) throw new Error("no features in the tree");
   return `${n} features · ${s}`;
+});
+
+await check("New Part (Ctrl+N) is empty", async () => {
+  const r = await evaluate(`async () => {
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "n", ctrlKey: true, bubbles: true }));
+    await new Promise((r) => setTimeout(r, 500));
+    return {
+      features: document.querySelectorAll("li.feature").length,
+      welcome: !!document.querySelector(".welcome"),
+      status: document.querySelector("footer")?.innerText.replace(/\\n/g, " · ") ?? "",
+    };
+  }`);
+  if (r.features || r.welcome || !/New part/.test(r.status)) throw new Error(JSON.stringify(r));
+  return r.status;
 });
 
 await check("screenshot", async () => {

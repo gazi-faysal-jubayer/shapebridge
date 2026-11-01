@@ -49,6 +49,30 @@ const SELECT_COLOR = new OV.RGBColor(59, 130, 246);
 const BIG_MODEL_TRIANGLES = 300_000;
 /** STLs this big skip OV's per-vertex model (about 1.4 GB of heap per million triangles) for typed arrays */
 const LEAN_STL_BYTES = 20e6;
+const ORIGIN_SIZE = 50;
+
+/** Front (XZ), Top (XY) and Right (YZ) planes in the part's Z-up frame, turned into the Y-up scene. */
+function originPlanes(): THREE.Group {
+  const group = new THREE.Group();
+  const quad = new THREE.PlaneGeometry(ORIGIN_SIZE, ORIGIN_SIZE);
+  const outline = new THREE.EdgesGeometry(quad);
+  const fill = new THREE.MeshBasicMaterial({
+    color: 0x3b82f6,
+    transparent: true,
+    opacity: 0.08,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const edge = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.6 });
+  // PlaneGeometry lies in XY; rotate it into each part plane
+  for (const rot of [new THREE.Euler(0, 0, 0), new THREE.Euler(Math.PI / 2, 0, 0), new THREE.Euler(0, Math.PI / 2, 0)]) {
+    const plane = new THREE.Group().add(new THREE.Mesh(quad, fill), new THREE.LineSegments(outline, edge));
+    plane.rotation.copy(rot);
+    group.add(plane);
+  }
+  group.rotation.x = -Math.PI / 2; // part Z-up → scene Y-up, as OV does for Z-up files
+  return group;
+}
 const keyOf = (ud: UserData) => ud.originalMeshInstance.id.GetKey();
 
 export class Engine {
@@ -105,6 +129,7 @@ export class Engine {
   private additive = false;
   /** OV rotated a Z-up file into its Y-up scene (STL, 3MF, FCStd…) */
   private rotated = false;
+  private origin: THREE.Group | null = null;
 
   resize() {
     this.viewer.Resize(this.parent.clientWidth, this.parent.clientHeight);
@@ -113,6 +138,7 @@ export class Engine {
   load(files: File[]): Promise<LoadResult> {
     this.viewer.Clear();
     this.reset();
+    this.hideOrigin();
     if (files.length === 1 && /\.stl$/i.test(files[0].name) && files[0].size > LEAN_STL_BYTES) return this.loadLean(files[0]);
     const settings = new OV.ImportSettings();
     settings.defaultColor = new OV.RGBColor(176, 190, 197);
@@ -355,6 +381,29 @@ export class Engine {
 
   setProjection(p: "perspective" | "orthographic") {
     this.viewer.SetProjectionMode(p === "orthographic" ? OV.ProjectionMode.Orthographic : OV.ProjectionMode.Perspective);
+  }
+
+  /** Empty scene with the Front/Top/Right origin planes, for a new part before its first feature. */
+  showOrigin() {
+    this.viewer.Clear();
+    this.reset();
+    this.origin ??= originPlanes();
+    if (!this.origin.parent) this.viewer.scene.add(this.origin);
+    this.origin.visible = true;
+    // parametric parts are Z-up and shown like a Z-up STL, so the planes use the same frame
+    this.rotated = true;
+    this.upAxis = "y";
+    this.viewer.SetUpVector(OV.Direction.Y, false);
+    const sphere = { center: new OV.Coord3D(0, 0, 0), radius: ORIGIN_SIZE };
+    const { dir, up } = viewDirection("iso", "y");
+    this.viewer.SetCamera(new OV.Camera(new OV.Coord3D(...dir), new OV.Coord3D(0, 0, 0), new OV.Coord3D(...up), 45));
+    this.viewer.AdjustClippingPlanesToSphere(sphere);
+    this.viewer.FitSphereToWindow(sphere, false);
+    this.viewer.Render();
+  }
+
+  private hideOrigin() {
+    if (this.origin) this.origin.visible = false;
   }
 
   setUpAxis(up: "y" | "z") {

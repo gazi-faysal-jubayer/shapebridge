@@ -4,7 +4,7 @@ import { createEffect, createSignal, on } from "solid-js";
 import { loadViews, setState, state, storeViews, type StdView, type Tool } from "./state/store";
 import type { Engine, MeshExt } from "./viewer/engine";
 import { saveFile } from "./platform/save";
-import { templates, migrate, resolve, type Doc, type Feature } from "./model/doc";
+import { migrate, resolve, type Doc, type Feature } from "./model/doc";
 import { newFeature } from "./model/edit";
 import type { Measures } from "./kernel/build";
 import { targets } from "./interop";
@@ -226,7 +226,32 @@ export const [historyTick, setHistoryTick] = createSignal(0);
 let rebuildTimer: number | undefined;
 const AUTOSAVE = "shapebridge.autosave.v2";
 
-export function loadDoc(d: unknown = templates[0]) {
+/** File → New Part: an empty part showing only its origin planes, ready for the first sketch or feature. */
+export function newPart() {
+  past.length = future.length = 0;
+  setHistoryTick((t) => t + 1);
+  setEditing(null);
+  setStep(null);
+  setMeasures(null);
+  setDocError("");
+  setDoc(blankDoc());
+  showEmptyPart();
+}
+
+function showEmptyPart() {
+  engine?.showOrigin();
+  setState({
+    files: [],
+    tree: null,
+    stats: { parts: 0, triangles: 0 },
+    selection: [],
+    hidden: [],
+    modelName: `${doc()!.name}.sbridge.json`,
+    status: "New part: pick a plane, then a sketch or feature from the ribbon",
+  });
+}
+
+export function loadDoc(d: unknown) {
   try {
     const next = migrate(structuredClone(d));
     resolve(next); // reject bad documents before they replace the current one
@@ -337,6 +362,7 @@ export function editParam(i: number, expr: string) {
 
 async function rebuild(preserveCamera: boolean) {
   const d = doc()!;
+  if (!d.features.length) return showEmptyPart();
   try {
     resolve(d);
     setDocError("");
