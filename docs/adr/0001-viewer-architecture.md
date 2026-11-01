@@ -32,7 +32,7 @@ The engine is a lazy chunk loaded after the shell paints.
 - **Easier:** initial JS fell from 264 KB to ~65 KB gzipped. The engine (~260 KB) loads in the background.
 - **Harder:** we depend on OV internals that aren't part of its documented API (`viewer.mainModel.EnumerateMeshes/EnumerateEdges`). We pin OV's version and cover these paths with browser checks.
 - **Revisit:**
-  - Stencil-capped sections need a renderer with a stencil buffer, which OV's `Viewer.Init` doesn't request. For now, sections show inner faces double-sided.
+  - Stencil-capped sections need a renderer with a stencil buffer, which OV's `Viewer.Init` doesn't request. The engine creates the WebGL context with `stencil: true` before calling `Init`, so three reuses it (#69). Assemblies of more than 300 parts fall back to double-sided inner faces.
   - The OCCT reader loaded from the CDN requires `'unsafe-eval'` in the CSP. Vendoring a build that doesn't need it is part of the converter work.
 
 ## Action items
