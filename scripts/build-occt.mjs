@@ -42,7 +42,8 @@ async function fetchSource({ url, sha256, dir }) {
   }
   const got = createHash("sha256").update(readFileSync(tar)).digest("hex");
   if (got !== sha256) throw new Error(`${tar}: sha256 ${got}, expected ${sha256}`);
-  run("tar", ["-xzf", tar, "-C", cache]);
+  // relative names from inside the cache: GNU tar (Git Bash on Windows) reads "D:\..." as a remote host
+  execFileSync("tar", ["-xzf", `${dir}.tar.gz`], { stdio: "inherit", cwd: cache });
   return out;
 }
 
@@ -80,6 +81,8 @@ if (!existsSync(join(install, "done"))) {
     "-S", occtSrc, "-B", build, ...arch, ...off, ...noDeps,
     "-DBUILD_LIBRARY_TYPE=Static", "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_MODULE_ApplicationFramework=TRUE",
     "-DUSE_RAPIDJSON=TRUE", `-D3RDPARTY_RAPIDJSON_INCLUDE_DIR=${join(rapidjson, "include")}`, `-DINSTALL_DIR=${install}`,
+    // OCCT 7.8 declares an old cmake_minimum_required that CMake 4 (macOS runners) refuses without this
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
   ]); // prettier-ignore
   run("cmake", ["--build", build, "--config", "Release", "--parallel"]);
   run("cmake", ["--install", build, "--config", "Release"]);
