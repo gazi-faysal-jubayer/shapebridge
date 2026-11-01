@@ -3,7 +3,10 @@ import Shapes from "lucide-solid/icons/shapes";
 import Boxes from "lucide-solid/icons/boxes";
 import Box from "lucide-solid/icons/box";
 import ShieldCheck from "lucide-solid/icons/shield-check";
+import { For, Show } from "solid-js";
+import History from "lucide-solid/icons/clock";
 import * as c from "../controller";
+import { openPaths, pickAndOpen, recent } from "../platform/open";
 
 export function Welcome() {
   return (
@@ -12,13 +15,28 @@ export function Welcome() {
       <h1>Open a CAD file</h1>
       <p class="muted">Drop it anywhere, or pick one. STEP, IGES, BREP, STL, OBJ, glTF, 3MF, FBX, IFC, Rhino 3DM, FreeCAD and more.</p>
       <div class="welcome-actions">
-        <button class="primary big" onClick={() => document.getElementById("file-input")?.click()}>
+        <button class="primary big" onClick={() => void pickAndOpen()}>
           <FolderOpen size={18} /> Open file…
         </button>
         <button class="big" onClick={() => c.loadDoc()}>
           <Shapes size={18} /> New parametric part
         </button>
       </div>
+      <Show when={recent().length}>
+        <h2>Recent</h2>
+        <ul class="recent">
+          <For each={recent()}>
+            {(p) => (
+              <li>
+                <button class="link" onClick={() => void openPaths([p])} title={p}>
+                  <History size={14} /> {p.split(/[\/]/).pop()}
+                </button>
+                <span class="muted small">{p}</span>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
       <h2>Try a sample</h2>
       <div class="samples">
         <button onClick={() => c.openSample("assembly.step")}>

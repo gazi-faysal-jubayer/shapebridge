@@ -1,3 +1,4 @@
+import { openPaths, pickAndOpen, recent } from "../platform/open";
 import { For, Show } from "solid-js";
 import { DropdownMenu } from "@kobalte/core/dropdown-menu";
 import FolderOpen from "lucide-solid/icons/folder-open";
@@ -18,7 +19,9 @@ export function TopBar(props: { guest: boolean }) {
         <img src="logo.svg" alt="" width="24" height="24" />
         <span>ShapeBridge</span>
       </a>
-      <Show when={!props.guest} fallback={
+      <Show
+        when={!props.guest}
+        fallback={
           <>
             <span class="pill">Live review</span>
             <Show when={live.allowDownload}>
@@ -34,7 +37,8 @@ export function TopBar(props: { guest: boolean }) {
               </DropdownMenu>
             </Show>
           </>
-        }>
+        }
+      >
         <nav class="menus" aria-label="Main menu">
           <For each={groups}>
             {(g) => (
@@ -52,6 +56,24 @@ export function TopBar(props: { guest: boolean }) {
                         </DropdownMenu.Item>
                       )}
                     </For>
+                    <Show when={g === "File" && recent().length}>
+                      <DropdownMenu.Sub>
+                        <DropdownMenu.SubTrigger class="menu-item">
+                          <span>Open recent</span>
+                        </DropdownMenu.SubTrigger>
+                        <DropdownMenu.Portal>
+                          <DropdownMenu.SubContent class="menu">
+                            <For each={recent()}>
+                              {(p) => (
+                                <DropdownMenu.Item class="menu-item" onSelect={() => void openPaths([p])} title={p}>
+                                  {p.split(/[\/]/).pop()}
+                                </DropdownMenu.Item>
+                              )}
+                            </For>
+                          </DropdownMenu.SubContent>
+                        </DropdownMenu.Portal>
+                      </DropdownMenu.Sub>
+                    </Show>
                     <Show when={g === "File"}>
                       <DropdownMenu.Separator class="menu-sep" />
                       <DropdownMenu.Sub>
@@ -77,7 +99,7 @@ export function TopBar(props: { guest: boolean }) {
         <Search size={15} /> <span>Search commands</span> <kbd>Ctrl K</kbd>
       </button>
       <Show when={!props.guest}>
-        <button class="icon-btn" onClick={() => document.getElementById("file-input")?.click()} title="Open file (Ctrl+O)">
+        <button class="icon-btn" onClick={() => void pickAndOpen()} title="Open file (Ctrl+O)">
           <FolderOpen size={17} /> <span class="hide-sm">Open</span>
         </button>
         <DropdownMenu>
