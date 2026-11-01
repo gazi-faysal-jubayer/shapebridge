@@ -6,3 +6,6 @@ src-tauri/gen/
 .DS_Store
 .claude/settings.local.json
 dist-cli/
+# Playwright output
+playwright-report/
+test-results/

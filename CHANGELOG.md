@@ -6,6 +6,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- Tests: every sample file must import with triangles (Vitest), plus Playwright end-to-end tests in CI covering opening, STL export, parameter edit with undo, and a two-browser live share.
 - CI: a dependency audit (`npm audit` for runtime packages, `cargo audit` for the desktop shell) and a launch smoke test that starts every desktop build and saves a screenshot.
 - CAD-style workspace:
   - a ribbon command bar (Features, Sketch, Evaluate, Review, View, Convert) with an original icon set

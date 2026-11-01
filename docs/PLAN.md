@@ -64,6 +64,7 @@ Effort: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one contributor).
 - [x] Thin vertical slice: open → view → export mesh; parametric sample → STEP and 5 interop targets; live P2P share
 - [x] Dependency audit in CI: `npm audit` (runtime, high+) and `cargo audit` (#2)
 - [x] Desktop launch smoke test on Windows, macOS arm64/x64 and Linux in CI, with a screenshot artifact (#4)
+- [x] Format smoke tests for every sample (#15) and Playwright end-to-end tests in CI (#16)
 
 ### M1 Viewer (v0.2)
 
