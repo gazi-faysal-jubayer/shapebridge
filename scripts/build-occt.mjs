@@ -6,8 +6,10 @@
 import { execFileSync, execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { availableParallelism } from "node:os";
 import { join, resolve } from "node:path";
 
+// CI caches the OCCT build by version: bump the "r1" in the workflows' cache keys when these sources or flags change
 const SOURCES = {
   occt: {
     url: "https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V7_8_1.tar.gz",
@@ -28,6 +30,8 @@ const target = args.includes("--target")
 const cache = resolve(process.env.OCCT_CACHE ?? ".occt");
 const win = target.includes("windows");
 const run = (cmd, a) => execFileSync(cmd, a, { stdio: "inherit" });
+// a bare --parallel means unlimited `make -j` on Linux/macOS, which ran CI runners out of memory
+const jobs = String(availableParallelism());
 mkdirSync(cache, { recursive: true });
 
 async function fetchSource({ url, sha256, dir }) {
@@ -84,14 +88,14 @@ if (!existsSync(join(install, "done"))) {
     // OCCT 7.8 declares an old cmake_minimum_required that CMake 4 (macOS runners) refuses without this
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
   ]); // prettier-ignore
-  run("cmake", ["--build", build, "--config", "Release", "--parallel"]);
+  run("cmake", ["--build", build, "--config", "Release", "--parallel", jobs]);
   run("cmake", ["--install", build, "--config", "Release"]);
   writeFileSync(join(install, "done"), "");
 }
 
 const sidecarBuild = join(cache, `sidecar-${target}`);
 run("cmake", ["-S", "native/occt-import", "-B", sidecarBuild, ...arch, "-DCMAKE_BUILD_TYPE=Release", `-DCMAKE_PREFIX_PATH=${install}`]);
-run("cmake", ["--build", sidecarBuild, "--config", "Release", "--parallel"]);
+run("cmake", ["--build", sidecarBuild, "--config", "Release", "--parallel", jobs]);
 
 const exe = win ? ".exe" : "";
 const built = [join(sidecarBuild, "Release", `shapebridge-occt${exe}`), join(sidecarBuild, `shapebridge-occt${exe}`)].find(existsSync);

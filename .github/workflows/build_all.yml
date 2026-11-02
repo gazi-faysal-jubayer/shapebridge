@@ -146,7 +146,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .occt/install-${{ matrix.target }}
-          key: occt-7.8.1-${{ matrix.target }}-${{ hashFiles('scripts/build-occt.mjs') }}
+          key: occt-7.8.1-r1-${{ matrix.target }} # bump r1 when the OCCT build flags in scripts/build-occt.mjs change
       - name: Build the native reader
         shell: bash
         run: node scripts/build-occt.mjs --target ${{ matrix.target }}
