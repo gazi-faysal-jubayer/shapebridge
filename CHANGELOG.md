@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Added
 
+- `building.ifc` sample (two walls and a floor slab) with a smoke test against web-ifc. IFC elements now show their own names in the model tree ("Wall south" instead of "Mesh 57").
+
 - **New Part** (Ctrl+N) starts an empty part that shows only its Front, Top and Right planes, ready for the first sketch or feature. Before, it opened the bracket template.
 - `npm run check:desktop -- --from local` builds the Windows app from your checkout, installs it and checks it, including New Part.
 
@@ -35,6 +37,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Fixed
 
+- IFC models showed 1000× too small: web-ifc reports metres, which the app read as millimetres.
 - A reader that crashes inside its own code now fails the load with a message instead of leaving "Loading…" forever.
 
 - Live review:

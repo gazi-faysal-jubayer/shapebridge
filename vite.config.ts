@@ -44,12 +44,19 @@ export const LIBS: Record<string, string> = {
 };
 const CDN = "https://cdn.jsdelivr.net/npm/";
 
+// OV names IFC meshes "Mesh <line number>"; show each element's own name ("Wall south"), as BIM viewers do
+const IFC_NAME = "mesh.SetName (FLoc ('Mesh {0}', ifcMesh.expressID.toString ()));";
+const IFC_NAME_FIX =
+  "mesh.SetName (this.GetIFCString (this.ifc.GetLine (modelID, ifcMesh.expressID)?.Name?.value ?? '') || FLoc ('Mesh {0}', ifcMesh.expressID.toString ()));";
+
 const localReaders = (): Plugin => ({
   name: "local-readers",
   transform(code, id) {
     if (!id.includes("online-3d-viewer") || !code.includes(CDN)) return;
+    if (code.includes("ImportIfcMesh") && !code.includes(IFC_NAME))
+      this.error("OV's IFC mesh naming changed; update IFC_NAME in vite.config.ts");
     // SB_LIB_BASE is set in main.tsx to an absolute URL (OV's OCCT worker runs from a blob: and can't resolve relative ones)
-    return { code: code.replaceAll(`'${CDN}`, "globalThis.SB_LIB_BASE + '"), map: null };
+    return { code: code.replaceAll(`'${CDN}`, "globalThis.SB_LIB_BASE + '").replace(IFC_NAME, IFC_NAME_FIX), map: null };
   },
   configureServer(server) {
     server.middlewares.use("/libs/", (req, res, next) => {
