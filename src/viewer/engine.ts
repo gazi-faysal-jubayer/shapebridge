@@ -166,7 +166,9 @@ export class Engine {
           if (triangles > BIG_MODEL_TRIANGLES) await this.accelerate();
           this.applyMaterials();
           this.setView("iso");
-          resolve({ tree, triangles, parts: tree.keys.length, unit: unitName(result.model.GetUnit()), upAxis: this.upAxis });
+          // web-ifc always hands over metres whatever the file's units, and OV doesn't say so
+          const unit = ext === "ifc" ? "Meter" : unitName(result.model.GetUnit());
+          resolve({ tree, triangles, parts: tree.keys.length, unit, upAxis: this.upAxis });
         },
         onLoadError: (err: { code: number; message: string | null }) =>
           reject(
