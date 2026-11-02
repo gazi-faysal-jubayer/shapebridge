@@ -98,6 +98,7 @@ function DesignLibrary() {
               ["assembly.step", "7-part assembly"],
               ["plate.step", "exact solid"],
               ["plate.stl", "mesh"],
+              ["building.ifc", "BIM model"],
             ] as const
           }
         >

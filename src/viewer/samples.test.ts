@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import * as OV from "online-3d-viewer";
 import occtImport from "occt-import-js";
+import { IfcAPI, IFCSLAB, IFCWALL } from "web-ifc";
 import { migrate, resolve } from "../model/doc";
 
 const dir = new URL("../../public/samples/", import.meta.url);
@@ -54,7 +55,30 @@ async function occtTriangles(content: ArrayBuffer): Promise<number> {
   return r.meshes.reduce((n, m) => n + m.index.array.length / 3, 0);
 }
 
+/** Triangles and element names from web-ifc, the IFC reader the viewer ships (OV loads it with a script tag, so not in Node). */
+async function ifc(content: ArrayBuffer): Promise<{ triangles: number; names: string[] }> {
+  const api = new IfcAPI();
+  await api.Init();
+  const id = api.OpenModel(new Uint8Array(content));
+  let triangles = 0;
+  api.StreamAllMeshes(id, (m) => {
+    for (let i = 0; i < m.geometries.size(); i++)
+      triangles += api.GetGeometry(id, m.geometries.get(i).geometryExpressID).GetIndexDataSize() / 3;
+  });
+  const names: string[] = [];
+  for (const type of [IFCWALL, IFCSLAB]) {
+    const ids = api.GetLineIDsWithType(id, type);
+    for (let i = 0; i < ids.size(); i++) names.push(api.GetLine(id, ids.get(i)).Name.value);
+  }
+  api.CloseModel(id);
+  return { triangles, names };
+}
+
 describe("sample files", () => {
+  it("building.ifc keeps its element names (#81)", async () => {
+    expect((await ifc(bytes("building.ifc"))).names).toEqual(["Wall south", "Wall west", "Floor slab"]);
+  });
+
   it("has samples to test", () => expect(samples.length).toBeGreaterThan(0));
 
   it.each(samples)("%s imports with triangles", async (f) => {
@@ -65,7 +89,12 @@ describe("sample files", () => {
       expect(resolve(doc).env).toBeDefined();
       return;
     }
-    const n = ext === "step" || ext === "stp" ? await occtTriangles(bytes(f)) : await ovTriangles(f, bytes(f));
+    const n =
+      ext === "step" || ext === "stp"
+        ? await occtTriangles(bytes(f))
+        : ext === "ifc"
+          ? (await ifc(bytes(f))).triangles
+          : await ovTriangles(f, bytes(f));
     expect(n).toBeGreaterThan(0);
   });
 });

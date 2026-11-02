@@ -191,7 +191,8 @@ export class Engine {
           if (triangles > BIG_MODEL_TRIANGLES) await this.accelerate();
           this.applyMaterials();
           this.setView("iso");
-          const unit = native ? "Millimeter" : unitName(result.model.GetUnit());
+          // the native reader keeps the STEP's millimetres; web-ifc always hands over metres and OV doesn't say so
+          const unit = native ? "Millimeter" : ext === "ifc" ? "Meter" : unitName(result.model.GetUnit());
           resolve({ tree, triangles, parts: tree.keys.length, unit, upAxis: this.upAxis });
         },
         onLoadError: (err: { code: number; message: string | null }) =>

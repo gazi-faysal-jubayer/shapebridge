@@ -6,16 +6,16 @@ ShapeBridge reads files through the [Online 3D Viewer engine](https://github.com
 
 ## Tier 1: neutral CAD (exact geometry)
 
-| Format             | Extensions   | Read                                             | Write                                               | Notes                                      |
-| ------------------ | ------------ | ------------------------------------------------ | --------------------------------------------------- | ------------------------------------------ |
-| STEP AP203/214/242 | `.step .stp` | ✅                                               | ✅ exact, from STEP/BREP files and parametric parts | colours and assembly names kept on read    |
-| IGES               | `.iges .igs` | ✅                                               | 🗺️ needs IGES in our OCCT build                     |                                            |
-| OpenCascade BREP   | `.brep .brp` | ✅                                               | ✅ exact                                            |                                            |
-| FreeCAD            | `.FCStd`     | ✅                                               | ✅ as `.FCMacro` (parametric)                       | the reader uses shapes embedded in the zip |
-| Rhino / openNURBS  | `.3dm`       | ✅                                               | ✅ (mesh)                                           | via rhino3dm                               |
-| IFC (BIM)          | `.ifc`       | 🧪 reader bundled, sample not yet verified (#81) | 🗺️ M1b                                              | Revit, ArchiCAD and Tekla exchange         |
-| dotbim             | `.bim`       | ✅                                               | ✅                                                  |                                            |
-| VRML               | `.wrl`       | ✅                                               | 🗺️ M1b                                              |                                            |
+| Format             | Extensions   | Read                                           | Write                                               | Notes                                                     |
+| ------------------ | ------------ | ---------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------- |
+| STEP AP203/214/242 | `.step .stp` | ✅                                             | ✅ exact, from STEP/BREP files and parametric parts | colours and assembly names kept on read                   |
+| IGES               | `.iges .igs` | ✅                                             | 🗺️ needs IGES in our OCCT build                     |                                                           |
+| OpenCascade BREP   | `.brep .brp` | ✅                                             | ✅ exact                                            |                                                           |
+| FreeCAD            | `.FCStd`     | ✅                                             | ✅ as `.FCMacro` (parametric)                       | the reader uses shapes embedded in the zip                |
+| Rhino / openNURBS  | `.3dm`       | ✅                                             | ✅ (mesh)                                           | via rhino3dm                                              |
+| IFC (BIM)          | `.ifc`       | ✅ elements named in the tree; sizes in metres | 🗺️ M1b                                              | Revit, ArchiCAD and Tekla exchange; sample `building.ifc` |
+| dotbim             | `.bim`       | ✅                                             | ✅                                                  |                                                           |
+| VRML               | `.wrl`       | ✅                                             | 🗺️ M1b                                              |                                                           |
 
 ## Tier 2: mesh, visualisation, 3D printing
 
