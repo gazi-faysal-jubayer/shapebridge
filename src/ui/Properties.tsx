@@ -43,6 +43,10 @@ export function Properties() {
               <dd>{p().vertices.toLocaleString()}</dd>
               <dt>File unit</dt>
               <dd>{state.modelUnit === "Unknown" ? "not stated (assumed mm)" : state.modelUnit}</dd>
+              <Show when={state.reader}>
+                <dt>Reader</dt>
+                <dd>{state.reader}</dd>
+              </Show>
             </dl>
             <Show when={p().properties.length}>
               <h3>File properties</h3>

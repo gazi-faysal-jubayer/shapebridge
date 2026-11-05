@@ -2,7 +2,7 @@
 
 Status legend: ✅ works today · 🧪 experimental · 🗺️ planned (see the linked milestone) · 🌉 through a bridge to an installed host app · ❌ not possible with open-source tools today
 
-ShapeBridge reads files through the [Online 3D Viewer engine](https://github.com/kovacsv/Online3DViewer). Its heavy readers (OCCT for STEP/IGES/BREP, rhino3dm, web-ifc, draco) ship with the app under `libs/` and load only when a file needs them, so everything works offline.
+ShapeBridge reads files through the [Online 3D Viewer engine](https://github.com/kovacsv/Online3DViewer). Its heavy readers (OCCT for STEP/IGES/BREP, rhino3dm, web-ifc, draco) ship with the app under `libs/` and load only when a file needs them, so everything works offline. On the desktop, STEP, IGES and BREP files opened from disk are read by native, multi-threaded OpenCascade instead, about twice as fast on big assemblies (see `docs/plans/performance-budget.md`).
 
 ## Tier 1: neutral CAD (exact geometry)
 
@@ -49,19 +49,19 @@ ShapeBridge reads files through the [Online 3D Viewer engine](https://github.com
 
 No open-source library can read the feature trees in these files, so we can't promise full support. ShapeBridge gives you what it legally and technically can:
 
-| App               | Extensions                | Preview thumbnail                 | Full geometry                                           |
-| ----------------- | ------------------------- | --------------------------------- | ------------------------------------------------------- |
-| SolidWorks        | `.sldprt .sldasm .slddrw` | 🗺️ M2b (embedded bitmap)          | 🌉 SolidWorks COM → STEP                                |
-| Autodesk Inventor | `.ipt .iam .idw`          | 🗺️ M2b                            | 🌉 Inventor / free Inventor Apprentice → STEP           |
-| Fusion 360        | `.f3d .f3z`               | ❌                                | 🌉 Fusion add-in → STEP + parameters                    |
-| CATIA V5          | `.CATPart .CATProduct`    | 🗺️ M2b                            | 🌉 CATIA COM → STEP                                     |
-| Siemens NX        | `.prt`                    | ❌                                | 🌉 NXOpen journal → STEP                                |
-| Solid Edge        | `.par .asm .psm`          | 🗺️ M2b                            | 🌉 Solid Edge COM → STEP                                |
-| PTC Creo          | `.prt .asm`               | ❌                                | 🌉 Creo journal → STEP                                  |
-| SketchUp          | `.skp`                    | ✅ (Collada export from SketchUp) | 🌉 optional plugin built on the free SketchUp SDK       |
-| Parasolid         | `.x_t .x_b`               | n/a                               | 🌉 host app · 🗺️ clean-room text reader (research)      |
-| ACIS              | `.sat .sab`               | n/a                               | 🌉 host app · 🗺️ clean-room text reader (research)      |
-| JT                | `.jt`                     | n/a                               | 🗺️ clean-room reader from the ISO 14306 spec (research) |
+| App               | Extensions                | Preview thumbnail                                                     | Full geometry                                           |
+| ----------------- | ------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------- |
+| SolidWorks        | `.sldprt .sldasm .slddrw` | 🗺️ M2b (embedded bitmap); opening one now explains how to export STEP | 🌉 SolidWorks COM → STEP                                |
+| Autodesk Inventor | `.ipt .iam .idw`          | 🗺️ M2b                                                                | 🌉 Inventor / free Inventor Apprentice → STEP           |
+| Fusion 360        | `.f3d .f3z`               | ❌                                                                    | 🌉 Fusion add-in → STEP + parameters                    |
+| CATIA V5          | `.CATPart .CATProduct`    | 🗺️ M2b                                                                | 🌉 CATIA COM → STEP                                     |
+| Siemens NX        | `.prt`                    | ❌                                                                    | 🌉 NXOpen journal → STEP                                |
+| Solid Edge        | `.par .asm .psm`          | 🗺️ M2b                                                                | 🌉 Solid Edge COM → STEP                                |
+| PTC Creo          | `.prt .asm`               | ❌                                                                    | 🌉 Creo journal → STEP                                  |
+| SketchUp          | `.skp`                    | ✅ (Collada export from SketchUp)                                     | 🌉 optional plugin built on the free SketchUp SDK       |
+| Parasolid         | `.x_t .x_b`               | n/a                                                                   | 🌉 host app · 🗺️ clean-room text reader (research)      |
+| ACIS              | `.sat .sab`               | n/a                                                                   | 🌉 host app · 🗺️ clean-room text reader (research)      |
+| JT                | `.jt`                     | n/a                                                                   | 🗺️ clean-room reader from the ISO 14306 spec (research) |
 
 How bridges work, and the legal limits on the clean-room research, are in [plans/native-formats-research.md](plans/native-formats-research.md).
 

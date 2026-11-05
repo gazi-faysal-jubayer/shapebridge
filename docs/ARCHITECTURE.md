@@ -44,13 +44,13 @@ Decision record: [adr/0001-viewer-architecture.md](adr/0001-viewer-architecture.
 
 ## Trust boundaries
 
-| Input | Validation |
-|---|---|
-| `.sbridge.json` from disk or a peer | `resolve()`: format tag, identifier names/ids, operator whitelist, cycles, finite and positive sizes |
-| Expressions | own recursive-descent parser; whitelist of operators and two functions; reserved names blocked; `Object.hasOwn` lookup |
-| Generated scripts | every string literal goes through `JSON.stringify`; ids and names are identifiers, so nothing user-controlled reaches code position |
-| Peer file metadata | name reduced to a safe basename (120 chars); file count clamped 1–64; `maxReceiveBytes` 512 MB |
-| CAD files | parsed by third-party readers inside the webview sandbox, OCCT inside a worker |
+| Input                               | Validation                                                                                                                          |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `.sbridge.json` from disk or a peer | `resolve()`: format tag, identifier names/ids, operator whitelist, cycles, finite and positive sizes                                |
+| Expressions                         | own recursive-descent parser; whitelist of operators and two functions; reserved names blocked; `Object.hasOwn` lookup              |
+| Generated scripts                   | every string literal goes through `JSON.stringify`; ids and names are identifiers, so nothing user-controlled reaches code position |
+| Peer file metadata                  | name reduced to a safe basename (120 chars); file count clamped 1–64; `maxReceiveBytes` 512 MB                                      |
+| CAD files                           | parsed by third-party readers inside the webview sandbox, OCCT inside a worker                                                      |
 
 ## Desktop vs web
 
@@ -64,5 +64,18 @@ Requires Rust stable plus platform deps ([Tauri prerequisites](https://tauri.app
 npm run tauri dev      # hot reload
 npm run tauri build    # installers in src-tauri/target/release/bundle/
 ```
+
+### Native STEP/IGES/BREP reader
+
+On the desktop, `native_import` (`src-tauri/src/main.rs`) runs `shapebridge-occt`, a separate OpenCascade program (`native/occt-import/`, LGPL like OCCT), on files opened from disk.
+
+- It writes binary glTF, which the viewer shows in the file's own frame and units.
+- The original file is still kept for exact conversion and live share.
+- If the sidecar is missing or fails, the app uses the built-in WebAssembly reader.
+
+To bundle it:
+
+1. Run `node scripts/build-occt.mjs`. It needs CMake and a C++ compiler; the first OpenCascade build takes about 15–30 minutes and is cached in `.occt/`.
+2. Then build with `npm run tauri build -- --config src-tauri/tauri.native.conf.json`. `npm run check:desktop -- --from local` adds it automatically when it has been built.
 
 CI builds all platforms on tag push (`.github/workflows/publish_release.yml`); every PR also gets installers from `build_all.yml`, so contributors don't need every toolchain.

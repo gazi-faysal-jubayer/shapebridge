@@ -2,6 +2,8 @@
 // folder drops everywhere, and the desktop recent-files list.
 import { setState, state } from "../state/store";
 import * as c from "../controller";
+import { pathOf } from "./native";
+import { vendorFileMessage } from "./vendor";
 
 export const isTauri = () => "__TAURI_INTERNALS__" in window;
 const RECENT_MAX = 10;
@@ -23,8 +25,17 @@ export async function openPaths(paths: string[]) {
   const { readFile } = await import("@tauri-apps/plugin-fs");
   const files: File[] = [];
   for (const p of paths) {
+    const vendor = vendorFileMessage(p);
+    if (vendor) {
+      // not openable, so not worth keeping in Recent (older versions added them)
+      setState("settings", "recent", (r) => r.filter((x) => x !== p));
+      setState("status", vendor.replace(p, baseName(p)));
+      continue;
+    }
     try {
-      files.push(new File([await readFile(p)], baseName(p)));
+      const file = new File([await readFile(p)], baseName(p));
+      pathOf.set(file, p);
+      files.push(file);
       setState("settings", "recent", (r) => pushRecent(r, p));
     } catch (e) {
       setState("settings", "recent", (r) => r.filter((x) => x !== p));

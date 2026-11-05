@@ -4,6 +4,8 @@ import { createEffect, createSignal, on } from "solid-js";
 import { loadViews, setState, state, storeViews, type StdView, type Tool } from "./state/store";
 import type { Engine, MeshExt } from "./viewer/engine";
 import { saveFile } from "./platform/save";
+import { nativeView } from "./platform/native";
+import { vendorFileMessage } from "./platform/vendor";
 import { migrate, resolve, type Doc, type Feature } from "./model/doc";
 import { newFeature } from "./model/edit";
 import type { Measures } from "./kernel/build";
@@ -64,7 +66,11 @@ export const cameraRotation = () => engine?.cameraRotation();
 
 // ---------- files ----------
 
-export async function openFiles(list: File[]) {
+export async function openFiles(files: File[]) {
+  // closed CAD formats (SolidWorks…) get an explanation; anything else dropped with them still opens
+  const vendor = files.map((f) => vendorFileMessage(f.name)).find(Boolean);
+  const list = files.filter((f) => !vendorFileMessage(f.name));
+  if (vendor && !list.length) return setState("status", vendor);
   if (list.length === 0) return;
   const json = list.find((f) => f.name.endsWith(".sbridge.json"));
   if (json) {
@@ -84,7 +90,9 @@ export async function show(list: File[], preserveCamera = false) {
   const camera = preserveCamera && state.files.length ? engine.getCamera() : null;
   setState({ loading: true, status: `Opening ${list.map((f) => f.name).join(", ")}…` });
   try {
-    const r = await engine.load(list);
+    // state keeps the original files (exact conversion and live share need them); only the view may differ
+    const native = await nativeView(list);
+    const r = await engine.load(native ? [native] : list);
     if (camera) engine.setCamera(camera);
     setState({
       files: list,
@@ -92,6 +100,7 @@ export async function show(list: File[], preserveCamera = false) {
       tree: r.tree,
       stats: { parts: r.parts, triangles: r.triangles },
       modelUnit: r.unit,
+      reader: native ? "OpenCascade (native)" : "built-in",
       upAxis: r.upAxis,
       selection: [],
       hidden: [],
