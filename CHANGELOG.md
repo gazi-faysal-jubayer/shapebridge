@@ -40,6 +40,7 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ### Fixed
 
+- The view cube showed a flat stack of labels ("BOTTOM" on top) while a parametric part built. Until the camera is known, it now faces straight on.
 - Models bigger than about a metre were cut off or vanished: the camera's far plane stayed at 1 m. Big assemblies now draw completely.
 - IFC models showed 1000× too small: web-ifc reports metres, which the app read as millimetres.
 - A reader that crashes inside its own code now fails the load with a message instead of leaving "Loading…" forever.
