@@ -63,3 +63,14 @@ test("exports the open model as STL", async ({ page }) => {
   // binary STL: 80-byte header, a count, then 50 bytes per triangle
   expect(statSync(file).size).toBeGreaterThan(84 + 50 * 12);
 });
+
+test("the view cube is a cube while a parametric part builds", async ({ page }) => {
+  // the cube appears before the kernel has built the part, and used to stack its faces flat until a camera change
+  await page.goto("/");
+  await page.locator(".samples button", { hasText: /Bracket/ }).click();
+  await expect(page.locator(".viewcube .face")).toHaveCount(6);
+  const placed = await page
+    .locator(".viewcube .face")
+    .evaluateAll((faces) => faces.map((f) => (f as HTMLElement).style.transform.startsWith("matrix3d")));
+  expect(placed).toEqual([true, true, true, true, true, true]);
+});

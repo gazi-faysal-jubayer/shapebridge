@@ -4,6 +4,8 @@ import * as c from "../controller";
 import { cubeFaceMatrix } from "../viewer/math";
 
 const SIZE = 64;
+// until the viewer reports its camera, face the cube straight on (faces left at no transform stack flat)
+const FRONT_ON = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const faces: Exclude<StdView, "iso">[] = ["front", "back", "left", "right", "top", "bottom"];
 
 // A CSS 3D cube that mirrors the camera; each face is a standard view. No WebGL needed.
@@ -17,7 +19,7 @@ export function ViewCube() {
           <button
             class="face"
             style={{
-              transform: rot() ? `matrix3d(${cubeFaceMatrix(f, state.upAxis, rot()!, SIZE).join(",")})` : "none",
+              transform: `matrix3d(${cubeFaceMatrix(f, state.upAxis, rot() ?? FRONT_ON, SIZE).join(",")})`,
               width: `${SIZE}px`,
               height: `${SIZE}px`,
             }}
